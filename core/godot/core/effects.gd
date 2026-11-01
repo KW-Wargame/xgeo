@@ -268,6 +268,8 @@ func escalate(by: float, why: String) -> void:
 ## What each effect would take right now, for the Selected item window.
 ## Returns [{key, ok, line, cost}] in the player's language.
 func options(shooter_id: String, target_id: String) -> Array:
+	if cfg.is_empty():
+		return [] # a scenario with no effects (CLOSE PASS at the Earth: an inspector carries none)
 	var sh: Dictionary = sim.by_id[shooter_id]
 	var tg: Dictionary = sim.by_id[target_id]
 	var R := V.dist(sh.r, tg.r)
@@ -512,6 +514,9 @@ func _exploit(tg: Dictionary) -> void:
 		if tg.role == "relay" or r.role == "relay":
 			var P := Track.diag([3000.0 ** 2, 3000.0 ** 2, 0.2 ** 2, 0.2 ** 2])
 			var x := PackedFloat64Array([r.r[0] + sim.stream("effects").randfn() * 2000.0, r.r[1] + sim.stream("effects").randfn() * 2000.0, r.v[0], r.v[1]])
+			if sim.sensing.dims == 3:
+				P = Track.diag([3000.0 ** 2, 3000.0 ** 2, 3000.0 ** 2, 0.2 ** 2, 0.2 ** 2, 0.2 ** 2])
+				x = PackedFloat64Array([x[0], x[1], r.r[2] + sim.stream("effects").randfn() * 2000.0, r.v[0], r.v[1], r.v[2]])
 			var tr := Track.new(r.id, "TRK %d" % sim.track_n, x, P, sim.t)
 			sim.track_n += 3
 			tr.ident = "classified"
@@ -525,7 +530,7 @@ func _launch(sh: Dictionary, target_id: String) -> void:
 	var k := kv_check(sh, target_id)
 	var tr: Track = sim.tracks[target_id]
 	var aim := tr.forecast(sim.t + k.tgo).pos()
-	var sol := Lambert.solve(sh.r, aim, k.tgo, sim.mu)
+	var sol := Lambert.solve(sh.r, aim, k.tgo, sim.mu, true, V.cross(sh.r, sh.v))
 	if sol.is_empty():
 		return
 	sh.rounds = int(sh.get("rounds", sh.cls.weapon.rounds)) - 1
@@ -585,7 +590,6 @@ func step(h: float) -> void:
 			_divert(k, tg, now, tgo)
 		if now >= float(kv.arrive) - 1e-6:
 			_arrive(kv, k, tg, now)
-	_sleeper(h)
 
 
 ## One course correction: the velocity that meets the target where it will
@@ -698,21 +702,6 @@ func impact(p: Dictionary, tg: Dictionary) -> Dictionary:
 			out.n = c.n
 		sim.say("kv_cripple", Lang.f("kv_cripple", [label, Damage.describe(tags), out.n]), "good", {"to": tg.id, "from": p.id, "emr": e})
 	return out
-
-
-## The sleeper strikes on any close pass, not just at look times.
-func _sleeper(h: float) -> void:
-	if sim.by_id.has("r3") and sim.by_id.has("excal"):
-		var s: Dictionary = sim.by_id.r3
-		var e: Dictionary = sim.by_id.excal
-		if s.alive and e.alive and s.ai.state == "strike" and not s.get("disabled", false):
-			var rel := V.sub(s.r, e.r)
-			var relv := V.sub(s.v, e.v)
-			var u := clampf(-V.dot(rel, relv) / maxf(V.dot(relv, relv), 1e-12), 0.0, h)
-			if V.norm(V.add(rel, V.scale(relv, u))) < float(s.cls.kill_km) and sim.red.can_see(s):
-				e.alive = false
-				s.ai.state = "done"
-				sim.say("excal_dead", Lang.f("excal_dead", []), "alert", {"to": "excal"})
 
 
 ## Every look: running jammers, radar, and their price.

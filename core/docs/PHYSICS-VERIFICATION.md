@@ -20,7 +20,7 @@ Result on 26 Oct 2026 (Godot 4.7.2), in the full repository: **762 of 762 compar
 | `tools/verify/make_cases.py` | Writes `fixtures/cases.json`, a deterministic grid of inputs: orbits from circular to e = 0.999 and hyperbolic, 3-D and retrograde, long- and short-way Lambert transfers, points around Jupiter, RF parameters from S to Ka band, random lines of sight, tracker states, bearing-line geometries, and the published worked examples. |
 | `godot/tests/dump_physics.gd` | **The bridge.** It runs every case through `godot/core/*.gd` and adds cases built from the live campaign (every ship, every sensor, emitter, radar and weapon class in `game.json` and `campaign.json`). It writes `tools/verify/out/game_physics.json`. It computes nothing itself. |
 | `tools/verify/tests/test_*.py` | Compare the dump with the references. Each comparison is recorded with its tolerance (`conftest.py`: `check.rel`, `check.abs`, `check.bound`, `check.true`, and `check.info` for known simplifications). |
-| `tools/verify/refs.py` | Reference models assembled from hapsira and scipy (the force model, DOP853 integration, the two-body STM). Its one transcription of game code is the moon ephemeris, which drives the reference integrator. It is tested against the game's own moon states before it is used. |
+| `tools/verify/refs.py` | Reference models assembled from hapsira and scipy (the force model, DOP853 integration, the two-body STM; the full-model STM is checked by differences of its coasts). Its one transcription of game code is the moon ephemeris, which drives the reference integrator. It is tested against the game's own moon states before it is used. |
 
 **Plugging in a new model.** The IR, sidelobe, ear-pointing and heat models are due to be replaced (REALISM-SOURCES.md §8). To add a replacement:
 1. Add a section to `dump_physics.gd` that calls the new functions on a grid of inputs and on the campaign platforms.
@@ -40,10 +40,10 @@ Tolerances are relative unless a unit is given. The "Result" column is the worst
 | Worked examples | — | Curtis (2020) Ex. 3.7; Vallado (2013) Ex. 2-4 | half the last printed digit | 3.9e-6 (Curtis), 3.3e-8 (Vallado) |
 | Elements → state (`Kepler.from_elements`, pure-Kepler case) | Kepler's equation by Newton | hapsira `M_to_E`, `E_to_nu`, `coe2rv`, e = 0–0.99 | 1e-10 | 1.6e-14 |
 | Stumpff functions | c(z), s(z) | 80-term Maclaurin series (Curtis eqs. 3.52–3.53) | 1e-9 | 9e-12 |
-| Lambert (`Lambert.solve`) | Universal variables, Curtis Alg. 5.2, bisection | hapsira `izzo` (Izzo 2015); 129 transfers including every ship from WARDEN | 1e-6 | 1.9e-12; every non-degenerate transfer solved |
+| Lambert (`Lambert.solve`, `Lambert.solve_all`) | Izzo (2015), Householder iteration, with the multi-revolution branches (since 30 Oct 2026; before, universal variables by bisection, Curtis Alg. 5.2, which src/engine/lambert.js still uses and the parity test checks against to 1e-8) | hapsira `izzo` (Izzo 2015); 129 transfers including every ship from WARDEN | 1e-6 | 7.3e-15 (Core alone, 111 transfers); every non-degenerate transfer solved |
 | Lambert worked example | — | Curtis (2020) Ex. 5.2 | 6e-5 | 8e-6 |
 | Force model (`Gravity.accel`) | μ/r² + J2 zonal + four moons as third bodies (direct − indirect) | hapsira `J2_perturbation`, `third_body`; central-difference gradient of the J2 potential | 1e-9 | 9e-11 |
-| Integrator (`Gravity.coast`, RK4) | RK4 at the sim's 60 s and the tracker's 120 s sub-steps, capped at 0.01 √(r³/μ) close to Jupiter, 1 day, J2 + moons, test orbits and every ship of the scenario | DOP853 at rtol 1e-13 on hapsira's force terms | 5 m (a tenth of the radar's 50 m range σ) | 1.0 m (CLOSE PASS's inspector at 1.3 Jupiter radii; 44 m before the cap, 26 Oct 2026) |
+| Integrator (`Gravity.coast`, DOP853) | DOP853 at rtol 1e-12 with error control, coasted in the game's own segments, 1 day, J2 + moons, test orbits and every ship of the scenario; and a 20-day J2 arc | DOP853 at rtol 1e-13 on hapsira's force terms | 1 cm (the need is 5 m, a tenth of the radar's 50 m range σ); 1 m over the 20 days | 2.75 mm (retrograde test orbit); 0.13 m over 20 days. RK4 before 27 Oct 2026: 1.0 m in a day (CLOSE PASS's inspector) |
 | J2 secular rates | Ω̇ = −3/2 nJ2(R/p)² cos i, ω̇ = 3/4 nJ2(R/p)²(5cos²i − 1) | Vallado (2013) eqs. 9-41/9-42; 20-day arc at a = 3.1 R_J, i = 30° | 1% | 0.40% / 0.36% (first-order theory) |
 
 ### Jupiter system
@@ -116,6 +116,7 @@ The mean-longitude rates agree with a least-squares fit to 10 years of Horizons 
 | Detection (`Sensing.ir_look`, `ir_sees`) | S/N = I/R²/(NEI·background), disc ×50, glare ×5; Pd = Φ(S/N − 5); sees = S/N ≥ 5 in IR or visible | Independent implementation, every sensor–target pair at the start; scipy.stats.norm | decisions; 1e-5 | 36 of 36 agree |
 | Unscented update (`Track._update`) | Julier sigma points, κ = 0, circular mean for bearings | [filterpy](https://github.com/rlabbe/filterpy) 1.4.5 `UnscentedKalmanFilter`, `JulierSigmaPoints` | 1e-6 | 3e-12 |
 | STM (`Track.stm`) | Central differences of the Kepler solver | Two-body variational equations, DOP853 | 1e-5 | 8e-10 |
+| Full-model STM (`Gravity.coast_stm`, the tracker's covariance) | Variational equations flown with the orbit; gravity gradient by hand (point mass, J2, moons, Sun) | Central differences of scipy DOP853 coasts on hapsira's J2 and third-body terms, 3 ships over 6 h (one off the plane); in `run_tests.gd`, the gradient against differences of `accel` | 1e-5 (blocks scaled by the coast's length) | 2.9e-6; gradient 2e-10 |
 | Covariance prediction | FPFᵀ + Q (white-noise acceleration) | filterpy `Q_continuous_white_noise` (Bar-Shalom et al. 2001 §6.2; Labbe, *Kalman and Bayesian Filters in Python* ch. 7) | 1e-4 | 4e-10 |
 | Bearing-line fix (`Track.cross_fix`) | Weighted least squares | scipy `least_squares`; Fisher information inverse (AoA Fisher information as in Herath & Pathirana 2013, *Sensors* 13:12277) | 1 m; 1e-9 | 2e-5 m; 7e-14 |
 

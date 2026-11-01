@@ -19,6 +19,12 @@
 ##   lines from two ears cross into a fix.
 ## - Identification: a strong enough recording measures the modulation
 ##   (classify); a close telescope look names the hull (identify).
+## - In a 3-D world (dims 3: a world about another body than Jupiter, or ships
+##   off the plane) tracks are 3-D and every angle is a direction, a unit
+##   vector with sigma in each of the two angles across it. Ground sites
+##   (kind "site", on the turning Earth) carry radars that are always on and
+##   see above their elevation mask. Objects in the public catalogue (the
+##   scenario's "catalogued") start with a track.
 class_name Sensing
 extends RefCounted
 
@@ -40,6 +46,9 @@ var false_lines: Array = []
 ## Where each pointed dish looks: ear id -> {"mode": "auto" | "track" | "park", "track": ship id}.
 ## "auto" (the assist) points at the hostile or unknown track seen most recently.
 var dish_aim := {}
+## Position components of Blue's tracks: 2 in the planar campaign, 3 in a
+## world that is not (set by begin()).
+var dims := 2
 
 
 ## The class to assume for a track Blue has not classified, when asking what
@@ -82,33 +91,101 @@ func gauss() -> float:
 	return sim.stream("sensing").randfn(0.0, 1.0)
 
 
-## The opening picture: the tender's departure burn was seen, so it already
-## has a track (as in the JS game); the ore carrier's beacon names it.
+## The opening picture: a ship with "opening_track" (its label) starts with a
+## track, already seen but loose (the scenario's opening sigma_km, sigma_kms),
+## and the scenario's opening cue says how it was found; one with
+## "beacon_track" starts named by its beacon, tight and identified.
 func begin() -> void:
-	if sim.by_id.has("h1"):
-		var h: Dictionary = sim.by_id.h1
-		# A campaign may say how good the opening track is and how it was cued.
-		var op: Dictionary = sim.camp.get("opening", {})
-		var sp := float(op.get("sigma_km", 3000.0))
-		var sv := float(op.get("sigma_kms", 0.3))
-		var P := Track.diag([(sp * 4.0 / 3.0) ** 2, (sp * 4.0 / 3.0) ** 2, (sv * 4.0 / 3.0) ** 2, (sv * 4.0 / 3.0) ** 2])
-		var x := PackedFloat64Array([h.r[0] + gauss() * sp, h.r[1] + gauss() * sp, h.v[0] + gauss() * sv, h.v[1] + gauss() * sv])
-		var tr := Track.new("h1", "TRK 4417", x, P, 0.0)
-		sim.tracks.h1 = tr
-		var cue: Array = op.get("cue", ["A drive flared near the freighter lane hours ago: TRK 4417.", "TRK 4417: initiated on observed burn."])
-		sim.say("cue", cue[1] if Lang.doctrinal else cue[0], "alert")
-	if sim.by_id.has("n1"):
-		var n: Dictionary = sim.by_id.n1
-		var tr := Track.new("n1", "TRK 4420", PackedFloat64Array([n.r[0], n.r[1], n.v[0], n.v[1]]), Track.diag([50.0 ** 2, 50.0 ** 2, 0.01 ** 2, 0.01 ** 2]), 0.0)
-		tr.ident = "identified"
-		tr.side = "neutral"
-		tr.class_id = n.classId
-		sim.tracks.n1 = tr
+	dims = world_dims(sim)
+	# The scenario's opening, or game.json's own when it runs alone.
+	var op: Dictionary = sim.camp.get("opening", sim.data.scenario.get("opening", {}))
+	for h in sim.ships:
+		if h.has("opening_track"):
+			var sp := float(op.get("sigma_km", 3000.0))
+			var sv := float(op.get("sigma_kms", 0.3))
+			var P := Track.diag([(sp * 4.0 / 3.0) ** 2, (sp * 4.0 / 3.0) ** 2, (sv * 4.0 / 3.0) ** 2, (sv * 4.0 / 3.0) ** 2])
+			var x := PackedFloat64Array()
+			if dims == 3:
+				var ps := (sp * 4.0 / 3.0) ** 2
+				var vs := (sv * 4.0 / 3.0) ** 2
+				P = Track.diag([ps, ps, ps, vs, vs, vs])
+				for i in 3:
+					x.append(h.r[i] + gauss() * sp)
+				for i in 3:
+					x.append(h.v[i] + gauss() * sv)
+			else:
+				x = PackedFloat64Array([h.r[0] + gauss() * sp, h.r[1] + gauss() * sp, h.v[0] + gauss() * sv, h.v[1] + gauss() * sv])
+			sim.tracks[h.id] = Track.new(h.id, String(h.opening_track), x, P, 0.0)
+			if op.has("cue"):
+				sim.say("cue", op.cue[1] if Lang.doctrinal else op.cue[0], "alert")
+		elif h.has("beacon_track"):
+			var tr := Track.new(h.id, String(h.beacon_track), PackedFloat64Array([h.r[0], h.r[1], h.v[0], h.v[1]]), Track.diag([50.0 ** 2, 50.0 ** 2, 0.01 ** 2, 0.01 ** 2]), 0.0)
+			if dims == 3:
+				tr = Track.new(h.id, String(h.beacon_track), PackedFloat64Array([h.r[0], h.r[1], h.r[2], h.v[0], h.v[1], h.v[2]]), Track.diag([50.0 ** 2, 50.0 ** 2, 50.0 ** 2, 0.01 ** 2, 0.01 ** 2, 0.01 ** 2]), 0.0)
+			tr.ident = "identified"
+			tr.side = "neutral"
+			tr.class_id = h.classId
+			sim.tracks[h.id] = tr
 	sim.track_n = 4423
+	_catalogued()
 
 
+## 2 if every ship starts in the plane of Jupiter's campaign, else 3: a world
+## about another body, or any ship off the plane.
+static func world_dims(sim_: Sim) -> int:
+	if sim_.central != "jupiter":
+		return 3
+	for s in sim_.ships:
+		if s.has("r") and absf(float(s.r[2])) > 1e-9:
+			return 3
+	return 2
+
+
+## Objects already in the public catalogue (the scenario's "catalogued":
+## [{id, sigma_km, sigma_kms, side?}]) start with a track: the truth plus
+## Gaussian noise of that 1σ in each axis, drawn from the "setup" stream, and
+## that covariance. The catalogue names the object (identified, its class);
+## whose side it is on, it does not say unless the scenario does.
+func _catalogued() -> void:
+	for c in sim.camp.get("catalogued", []):
+		var id := String(c.id)
+		if not sim.by_id.has(id) or sim.tracks.has(id):
+			continue
+		var o: Dictionary = sim.by_id[id]
+		var sp := float(c.get("sigma_km", 1.0))
+		var sv := float(c.get("sigma_kms", 0.001))
+		var g := sim.stream("setup")
+		var x := PackedFloat64Array()
+		var v := []
+		for i in dims:
+			x.append(o.r[i] + g.randfn(0.0, 1.0) * sp)
+			v.append(sp * sp)
+		for i in dims:
+			x.append(o.v[i] + g.randfn(0.0, 1.0) * sv)
+			v.append(sv * sv)
+		var tr := Track.new(id, "TRK %d" % sim.track_n, x, Track.diag(v), sim.t)
+		sim.track_n += 3
+		tr.ident = "identified"
+		tr.class_id = o.classId
+		tr.side = String(c.get("side", "unknown"))
+		tr.last_seen = sim.t
+		sim.tracks[id] = tr
+
+
+## A measured direction from a to b: the true one turned by two independent
+## Gaussian angles of 1σ sig across it (small angles).
+func noisy_dir(a: PackedFloat64Array, b: PackedFloat64Array, sig: float) -> PackedFloat64Array:
+	var d := V.sub(b, a)
+	var u := V.scale(d, 1.0 / V.norm(d))
+	var ee := Track.across_of(u)
+	var m := V.add(u, V.add(V.scale(ee[0], gauss() * sig), V.scale(ee[1], gauss() * sig)))
+	return V.scale(m, 1.0 / V.norm(m))
+
+
+## Our craft that look: an infrared sensor, a telescope, or both (an
+## inspector may carry only a telescope: WATCHMAN-1).
 func sensors() -> Array:
-	return sim.blue_ships().filter(func(s): return s.cls.has("ir"))
+	return sim.blue_ships().filter(func(s): return s.cls.has("ir") or s.cls.has("optical"))
 
 
 func ears() -> Array:
@@ -120,7 +197,7 @@ func occulted(a: PackedFloat64Array, b: PackedFloat64Array) -> bool:
 	var d := V.sub(b, a)
 	var L2 := V.dot(d, d)
 	var u := clampf(-V.dot(a, d) / L2, 0.0, 1.0)
-	return V.norm(V.add(a, V.scale(d, u))) < float(sim.data.jupiter.radius)
+	return V.norm(V.add(a, V.scale(d, u))) < sim.central_radius()
 
 
 ## Sensors stare all the time; the game checks them every look. A burn since
@@ -135,17 +212,25 @@ func intensity(s: Dictionary, toward: PackedFloat64Array) -> float:
 	return float(sim.thermal.intensity(s, toward, lit(s)).total)
 
 
+## The glare round the planet's lit limb reaches glareCone times its
+## apparent radius, but no more than GLARE_MAX past the limb: from low orbit
+## the Earth fills most of the sky, and three times its radius would leave no
+## sky at all. 20° is about the Hubble Space Telescope's bright-Earth
+## avoidance angle (design value, after it).
+const GLARE_MAX := deg_to_rad(20.0)
+
+
 ## How bright the sky behind the target is, as a multiple of the sensor's NEI:
 ## Jupiter's disc (design value inside the derived ×26–92), then stray light near it.
 func background(o: Dictionary, p: PackedFloat64Array) -> float:
 	var to_j := V.scale(o.r, -1.0)
 	var to_x := V.sub(p, o.r)
 	var ang := acos(clampf(V.dot(to_j, to_x) / (V.norm(to_j) * V.norm(to_x)), -1.0, 1.0))
-	var jr := asin(minf(1.0, float(sim.data.jupiter.radius) / V.norm(o.r)))
+	var jr := asin(minf(1.0, sim.central_radius() / V.norm(o.r)))
 	var band: Dictionary = sim.data.cfg.ir.band
 	if ang < jr:
 		return float(band.discFactor)
-	if ang < float(sim.data.cfg.ir.glareCone) * jr:
+	if ang < jr + minf((float(sim.data.cfg.ir.glareCone) - 1.0) * jr, GLARE_MAX):
 		return float(band.glareFactor)
 	return 1.0
 
@@ -211,6 +296,38 @@ static func vis_limit(aperture: float, vis: Dictionary) -> float:
 	return float(vis.limitMag) + 2.5 * log(aperture / float(vis.refAperture)) / log(10.0)
 
 
+## Photons per second a telescope of aperture D (m) collects from a source of
+## V magnitude mag, as electrons after the optics' throughput and the
+## detector's quantum efficiency: the V band's zero point, 3.63e-11 W m⁻² nm⁻¹
+## at 545 nm (Bessell, Castelli & Plez 1998, A&A 333, 231, Table A2) over the
+## band's 88 nm (Bessell 1990, PASP 102, 1181), is 8.8e9 photons s⁻¹ m⁻² for
+## magnitude 0.
+const V_ZERO_PHOTONS := 3.63e-11 * 88.0 * 545e-9 / (6.62607015e-34 * 299792458.0) # photons s⁻¹ m⁻²
+
+
+static func photon_rate(mag: float, D: float, qe := 1.0, throughput := 1.0) -> float:
+	return V_ZERO_PHOTONS * pow(10.0, -0.4 * mag) * PI * D * D / 4.0 * qe * throughput
+
+
+## Pixels a moving point source covers in one exposure: a disc of diameter w
+## (the seeing or PSF, px) dragged L = rate·t px, a stadium of area
+## πw²/4 + w·L. A streak spreads the same light over more sky (Shell 2010,
+## "Optimizing orbital debris monitoring with optical telescopes", AMOS).
+static func streak_pixels(w_px: float, rate_px_s: float, t: float) -> float:
+	return PI * w_px * w_px / 4.0 + w_px * rate_px_s * t
+
+
+## SNR of a source in an exposure of t s (the CCD equation; Merline & Howell
+## 1995, Exp. Astron. 6, 163): S·t / √(S·t + n·(B·t + D·t + R²)), with S the
+## source's electrons per second inside the aperture, n its pixels, B the sky's
+## and D the dark current's electrons per pixel per second, R the read noise
+## (e⁻ rms). The sky per pixel is photon_rate of its surface brightness (mag
+## arcsec⁻²) times the pixel's area (arcsec²).
+static func ccd_snr(S: float, t: float, n: float, B: float, D := 0.0, R := 0.0) -> float:
+	var s := S * t
+	return s / sqrt(maxf(s + n * (B * t + D * t + R * R), 1e-300))
+
+
 ## How far (km) a telescope of this aperture sees a sunlit hull at S/N 5, side-lit (phase 90°).
 static func vis_range_km(sig: Dictionary, aperture: float, S: float, vis: Dictionary, ph := PI / 2.0) -> float:
 	var dm := vis_limit(aperture, vis) - vis_mag(sig, 1.0, ph, S, vis)
@@ -265,24 +382,55 @@ func look() -> void:
 			if by == "":
 				continue
 			var sig: float = sim.data.cfg.ir.bearingSigma
-			var b := bearing(o.r, x.r) + gauss() * sig
+			var u3 := PackedFloat64Array()
+			var b := 0.0
+			if dims == 3:
+				u3 = noisy_dir(o.r, x.r, sig)
+				b = atan2(u3[1], u3[0])
+			else:
+				b = bearing(o.r, x.r) + gauss() * sig
 			if tr != null:
 				if lit(x) and float(x.get("seen_burn_at", -1.0)) < t - 1.0:
 					# How hard could it have burned? Thrust over mass, for as long as the plume could have lasted.
 					var m := (float(x.get("dry", 10.0)) + float(x.get("prop", 0.0))) * 1000.0
 					var thrust: float = x.cls.engine.thrust if x.cls.has("engine") else 0.0
 					var bound := thrust / m * maxf(float(x.get("burn_seconds", 300.0)), 300.0) / 1000.0
-					tr.maneuver_seen(sim.LOOK, maxf(0.05, bound))
+					if dims == 3:
+						# A jump at the moment it was seen, sized by the sightings after it (Track.burn_seen).
+						if int(tr.burn.get("n", -1)) != int(x.get("burns", 0)):
+							tr.burn_seen(int(x.get("burns", 0)), float(x.get("burn_at", t)), maxf(0.001, bound))
+					else:
+						tr.maneuver_seen(sim.LOOK, maxf(0.05, bound))
 					x.seen_burn_at = t
 					if int(x.get("burn_logged", -1)) != int(x.get("burns", 0)):
 						x.burn_logged = int(x.get("burns", 0))
 						sim.say("burn_seen", Lang.f("burn_seen", [tr.label]), "alert")
-				tr.update_bearing(o.r, b, sig)
-				tr.lobs.append({"t": t, "from": o.r, "bearing": b, "kind": "ir" if by == "IR" else "vis", "by": o.id})
+				# Ranging by size (stadiametric): a hull of known class and length L
+				# that spans angle θ is at L/θ. The telescope measures θ to about one
+				# diffraction element, so σR ≈ R²·(1.22λ/D)/L: metres at a few km,
+				# useless at a thousand. It ends the range ambiguity of bearings alone.
+				# In 3-D, with the direction it is one position fix (Track.update_fix),
+				# right however wide the track is.
+				var sig_r := INF
+				if o.cls.has("optical") and tr.class_id == x.classId:
+					var res := 1.22 * float(sim.data.cfg.ir.visibleLambda) / float(o.cls.optical.aperture)
+					sig_r = pow(V.dist(o.r, x.r) * 1000.0, 2.0) * res / float(x.cls.length)
+				if dims == 3 and sig_r < 0.2 * V.dist(o.r, x.r) * 1000.0:
+					tr.update_fix(o.r, (V.dist(o.r, x.r) * 1000.0 + gauss() * sig_r) / 1000.0, u3, sig_r / 1000.0, sig)
+					tr.lobs.append({"t": t, "from": o.r, "bearing": b, "dir": u3, "kind": "ir" if by == "IR" else "vis", "by": o.id, "range": V.dist(o.r, x.r)})
+				elif dims == 3:
+					tr.update_dir(o.r, u3, sig)
+					tr.lobs.append({"t": t, "from": o.r, "bearing": b, "dir": u3, "kind": "ir" if by == "IR" else "vis", "by": o.id})
+				else:
+					tr.update_bearing(o.r, b, sig)
+					tr.lobs.append({"t": t, "from": o.r, "bearing": b, "kind": "ir" if by == "IR" else "vis", "by": o.id})
 				seen = true
 				tr.how = by
 			else:
-				_pend(x.id, {"t": t, "from": o.r, "bearing": b, "sigma": sig, "by": o.id})
+				var line := {"t": t, "from": o.r, "bearing": b, "sigma": sig, "by": o.id}
+				if dims == 3:
+					line.dir = u3
+				_pend(x.id, line)
 			# A close look with a telescope names the hull: inside id_range_km, where
 			# the hull's length spans the Johnson criteria's 12.8 resolution elements.
 			if o.cls.has("optical") and tr != null and not tr.seen_id:
@@ -293,7 +441,7 @@ func look() -> void:
 			# that spans angle θ is at L/θ. The telescope measures θ to about one
 			# diffraction element, so σR ≈ R²·(1.22λ/D)/L: metres at a few km,
 			# useless at a thousand. It ends the range ambiguity of bearings alone.
-			if o.cls.has("optical") and tr != null and tr.class_id == x.classId and seen:
+			if o.cls.has("optical") and tr != null and tr.class_id == x.classId and seen and dims == 2:
 				var r_m := V.dist(o.r, x.r) * 1000.0
 				var res := 1.22 * float(sim.data.cfg.ir.visibleLambda) / float(o.cls.optical.aperture)
 				var sig_r := r_m * r_m * res / float(x.cls.length)
@@ -304,6 +452,9 @@ func look() -> void:
 		if tr != null:
 			if seen:
 				tr.mark_seen(t)
+			if tr.burn.get("sized", false) and not tr.burn.get("told", false):
+				tr.burn.told = true
+				sim.say("burn_sized", Lang.f("burn_sized", [tr.label, "%.1f" % (V.norm(tr.burn.dv) * 1000.0), "%.1f" % (float(tr.burn.sigma) * 1000.0)]), "info", {"from": x.id})
 			if tr.in_contact and not seen and x.side == "red":
 				sim.say("lost", Lang.f("lost", [tr.label]), "warn")
 			tr.in_contact = seen
@@ -373,6 +524,8 @@ func _try_start(id: String) -> void:
 		if group.size() < 2:
 			continue
 		var cross := absf(Track.wrap_angle(group[0].bearing - group[1].bearing))
+		if group[0].has("dir") and group[1].has("dir"):
+			cross = acos(clampf(absf(V.dot(group[0].dir, group[1].dir)), 0.0, 1.0))
 		if minf(cross, PI - cross) < deg_to_rad(4.0):
 			continue
 		var fix := Track.cross_fix(group)
@@ -449,8 +602,6 @@ func _listen(a: float, b: float) -> void:
 			var known: Track = sim.tracks.get(x.id)
 			if known == null or known.side != "neutral":
 				sim.say("heard", Lang.f("heard", [rec.id, "%.1f MHz %s" % [ttc.f / 1e6, "burst" if rec.kind == "ttc" else "long burst"], who]), "info", {"intercept": rec.id})
-			if rec.kind == "wake":
-				sim.say("wake", Lang.f("wake", [label_for(x.id) if sim.tracks.has(x.id) else rec.id]), "alert")
 			if auto:
 				df(rec.id)
 				classify(rec.id)
@@ -598,7 +749,7 @@ static func link_snr(Pt: float, Gt_dbi: float, Gr_dbi: float, f: float, bw: floa
 ## eq. 1, with N = kTsB and Bτ ≈ 1; in its average-power and dwell-time form): SNR = P_avg·G²·λ²·σ·t / ((4π)³·R⁴·k·Ts), R in m. No losses.
 static func radar_snr(rd: Dictionary, rcs: float, R: float) -> float:
 	var f := float(rd.f)
-	var G := RF.dish_gain(float(rd.dish), f)
+	var G := RF.dish_gain(float(rd.dish), f) if rd.has("dish") else RF.from_db(float(rd.gain))
 	var lam := RF.wavelength(f)
 	return float(rd.pAvg) * G * G * lam * lam * rcs * float(rd.tau) / (pow(4.0 * PI, 3.0) * pow(R, 4.0) * RF.K_BOLTZ * float(rd.Ts))
 
@@ -608,8 +759,12 @@ static func radar_snr(rd: Dictionary, rcs: float, R: float) -> float:
 ## monopulse slope km ≈ 1.6, a typical value (Barton 2005, Radar System Analysis
 ## and Modeling; consistent with MIT Lincoln Laboratory, Introduction to Radar
 ## Systems: Tracking and Parameter Estimation, 2008).
+## A radar block with its gain (dBi) and no dish: the dish of that gain at 55%
+## efficiency (RF.dish_gain inverted).
 static func radar_angle_sigma(rd: Dictionary, snr: float) -> float:
-	return 1.22 * RF.wavelength(float(rd.f)) / float(rd.dish) / (1.6 * sqrt(2.0 * maxf(snr, 1e-9)))
+	var lam := RF.wavelength(float(rd.f))
+	var D := float(rd.dish) if rd.has("dish") else lam / PI * sqrt(RF.from_db(float(rd.gain)) / 0.55)
+	return 1.22 * lam / D / (1.6 * sqrt(2.0 * maxf(snr, 1e-9)))
 
 
 ## Where a ship was at time at (a few minutes ago at most): coast it back.
@@ -648,12 +803,20 @@ func df(id: String) -> int:
 		var thermal := RF.df_sigma(rec.f, float(e.cls.esm.baseline), rec.heard_by[ear_id], float(rec.bw) * (float(rec.end) - float(rec.start)))
 		var sig := sqrt(thermal * thermal + DF_FLOOR * DF_FLOOR)
 		var from: PackedFloat64Array = rec.ear_pos[ear_id]
+		if dims == 3:
+			var u := noisy_dir(from, rec.truth, sig)
+			lines.append({"t": (rec.start + rec.end) / 2.0, "from": from, "bearing": atan2(u[1], u[0]), "dir": u, "sigma": sig, "by": ear_id})
+			continue
 		lines.append({"t": (rec.start + rec.end) / 2.0, "from": from, "bearing": bearing(from, rec.truth) + gauss() * sig, "sigma": sig, "by": ear_id})
 	rec.lines = lines
 	var tr: Track = sim.tracks.get(rec.ship)
 	if tr != null:
 		tr.predict(sim.t)
 		for l in lines:
+			if l.has("dir") and tr.dims() == 3:
+				tr.update_dir(l.from, l.dir, l.sigma, l.t)
+				tr.lobs.append({"t": sim.t, "from": l.from, "bearing": l.bearing, "dir": l.dir, "kind": "df", "by": l.by, "sigma": l.sigma})
+				continue
 			tr.update_bearing(l.from, l.bearing, l.sigma, l.t)
 			tr.lobs.append({"t": sim.t, "from": l.from, "bearing": l.bearing, "kind": "df", "by": l.by, "sigma": l.sigma})
 		tr.mark_seen(rec.end)
@@ -688,7 +851,12 @@ func classify(id: String) -> bool:
 ## Radar equation (Skolnik): SNR = P·G²·λ²·σ·τ / ((4π)³ R⁴ k T) (radar_snr).
 func _radar(t: float) -> void:
 	for o in sim.blue_ships():
-		if not o.alive or not o.cls.has("radar") or not sim.effects.radar_on.get(o.id, false):
+		if not o.alive or not o.cls.has("radar"):
+			continue
+		if o.get("kind", "") == "site":
+			_site_radar(o, t)
+			continue
+		if not sim.effects.radar_on.get(o.id, false):
 			continue
 		var rd: Dictionary = o.cls.radar
 		for x in sim.ships:
@@ -700,12 +868,80 @@ func _radar(t: float) -> void:
 				continue
 			var tr: Track = sim.tracks[x.id]
 			var sb := radar_angle_sigma(rd, snr)
-			tr.update_range(o.r, R / 1000.0 + gauss() * 0.05, 0.05)
-			tr.update_bearing(o.r, bearing(o.r, x.r) + gauss() * sb, sb)
-			tr.lobs.append({"t": t, "from": o.r, "bearing": bearing(o.r, x.r), "kind": "radar", "by": o.id, "range": R / 1000.0})
+			if tr.dims() == 3:
+				# Range and both angles as one position fix (Track.update_fix).
+				var u := noisy_dir(o.r, x.r, sb)
+				tr.update_fix(o.r, R / 1000.0 + gauss() * 0.05, u, 0.05, sb)
+				tr.lobs.append({"t": t, "from": o.r, "bearing": atan2(u[1], u[0]), "dir": u, "kind": "radar", "by": o.id, "range": R / 1000.0})
+			else:
+				tr.update_range(o.r, R / 1000.0 + gauss() * 0.05, 0.05)
+				tr.update_bearing(o.r, bearing(o.r, x.r) + gauss() * sb, sb)
+				tr.lobs.append({"t": t, "from": o.r, "bearing": bearing(o.r, x.r), "kind": "radar", "by": o.id, "range": R / 1000.0})
 			tr.mark_seen(t)
 			tr.in_contact = true
 			tr.how = "RADAR"
+
+
+## A ground site's radar (kind "site", on the turning Earth): always on, one
+## measurement per look of every object not Blue's that stands above its
+## elevation mask, measured from the local vertical (the site's direction
+## from the centre), and inside its reach.
+## - A site radar given by its measured accuracy ("site": true; Pro's
+##   database: PFISR, LeoLabs, Space Fence) sees whatever is inside
+##   max_range_km, with range to sigma_range_km and both angles to
+##   sigma_angle_deg, and no SNR test.
+## - Otherwise the radar equation decides (SNR 20, radar_snr), with range
+##   to sigma_range_km (or 50 m) and angles to sigma_angle_deg (or the
+##   monopulse radar_angle_sigma). The mask and these may sit in the radar
+##   block or the class.
+## An object it sees without a track starts one at the measured position
+## (Track.start, its velocity a circular-orbit guess).
+func _site_radar(o: Dictionary, t: float) -> void:
+	var rd: Dictionary = o.cls.radar
+	var measured := bool(rd.get("site", false))
+	var min_el := deg_to_rad(float(rd.get("min_el_deg", o.cls.get("min_el_deg", 0.0))))
+	var reach := float(rd.get("max_range_km", o.cls.get("max_range_km", INF)))
+	var up := V.scale(o.r, 1.0 / V.norm(o.r))
+	for x in sim.ships:
+		if x.side == "blue" or not x.alive or not x.has("r"):
+			continue
+		var d := V.sub(x.r, o.r)
+		var R := V.norm(d)
+		if R > reach or asin(clampf(V.dot(d, up) / R, -1.0, 1.0)) < min_el:
+			continue
+		var sr := float(rd.get("sigma_range_km", o.cls.get("sigma_range_km", 0.05)))
+		var sa := deg_to_rad(float(rd.get("sigma_angle_deg", o.cls.get("sigma_angle_deg", 0.0))))
+		if not measured:
+			var snr := radar_snr(rd, float(x.cls.get("rcs", 1.0)), R * 1000.0)
+			if snr < 20.0:
+				continue
+			if sa <= 0.0:
+				sa = radar_angle_sigma(rd, snr)
+		var rm := R + gauss() * sr
+		var u := noisy_dir(o.r, x.r, sa)
+		var tr: Track = sim.tracks.get(x.id)
+		if tr == null:
+			# A position fix: range along the measured line, the angles across it.
+			var ee := Track.across_of(u)
+			var fix := {"r": V.add(o.r, V.scale(u, rm)), "P2": []}
+			for i in 3:
+				var row := []
+				for j in 3:
+					row.append(sr * sr * u[i] * u[j] + (sa * rm) ** 2 * (ee[0][i] * ee[0][j] + ee[1][i] * ee[1][j]))
+				fix.P2.append(row)
+			var label := "TRK %d" % sim.track_n
+			sim.track_n += 3
+			tr = Track.start(x.id, label, fix, t)
+			sim.tracks[x.id] = tr
+			pending.erase(x.id)
+			sim.say("new_track", Lang.f("new_track", [label, _where(fix.r)]), "alert")
+		else:
+			tr.predict(t)
+			tr.update_fix(o.r, rm, u, sr, sa)
+		tr.lobs.append({"t": t, "from": o.r, "bearing": atan2(u[1], u[0]), "dir": u, "kind": "radar", "by": o.id, "range": R})
+		tr.mark_seen(t)
+		tr.in_contact = true
+		tr.how = "RADAR"
 
 
 ## How far (km) an ear hears a burst at even odds when the emitter's dish is

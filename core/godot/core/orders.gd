@@ -159,12 +159,12 @@ static func _seen(sim: Sim, target: String) -> Array:
 	return [tr.pos(), tr.vel()]
 
 
-## A point km behind node along the target's orbit (the direction it travels).
+## A point km behind node along the target's orbit (the direction it travels):
+## along h × node, h the orbit's pole (r × v), so it keeps to an inclined
+## orbit's plane; in the game plane it is the turn about z it always was.
 static func _behind(sim: Sim, target: String, node: PackedFloat64Array, km: float) -> PackedFloat64Array:
 	var tv := _seen(sim, target)
 	var r: PackedFloat64Array = tv[0] if not tv.is_empty() else node
 	var v: PackedFloat64Array = tv[1] if not tv.is_empty() else V.of(-node[1], node[0])
-	var prograde := signf(r[0] * v[1] - r[1] * v[0])
-	var n := V.norm(node)
-	var along := V.of(-node[1] / n * prograde, node[0] / n * prograde, 0.0)
-	return V.sub(node, V.scale(along, km))
+	var along := V.cross(V.cross(r, v), node)
+	return V.sub(node, V.scale(along, km / maxf(V.norm(along), 1e-12)))

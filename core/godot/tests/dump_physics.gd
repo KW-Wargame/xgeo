@@ -35,7 +35,7 @@ func state(st: Array) -> Dictionary:
 
 
 func _init() -> void:
-	# The platforms and effects of the scenario (data/campaign.json) when it is here;
+	# The platforms and effects of the scenario (tests/fixtures/jupiter_shadow.json, a test world) when it is here;
 	# xGEO Core on its own has no scenario file, and then it runs on game.json alone.
 	if not FileAccess.file_exists(Sim.campaign_path):
 		Sim.campaign_path = ""
@@ -47,7 +47,7 @@ func _init() -> void:
 	var cases_path: String = args.get("cases", root.path_join("tools/verify/fixtures/cases.json"))
 	var out_path: String = args.get("out", root.path_join("tools/verify/out/game_physics.json"))
 	var cases: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(cases_path))
-	sim = Sim.new()
+	sim = Sim.new("res://data/game.json", "res://tests/fixtures/jupiter_shadow.json")
 	var t0 := Time.get_ticks_msec()
 	var out := {
 		"note": "Written by godot/tests/dump_physics.gd from the game's own functions. Do not edit.",
@@ -160,7 +160,17 @@ func gravity(cases: Dictionary) -> Dictionary:
 			t += seg
 			samples.append({"t": t, "r": arr(st[0]), "v": arr(st[1])})
 		coasts.append({"name": c.name, "t0": c.t0, "dt": c.dt, "max_h": c.max_h, "j2": c.j2, "moons": c.moons, "samples": samples})
-	return {"accel": acc, "coast": coasts}
+	# The transition matrix the tracker flies with its mean (J2 and the moons;
+	# the reference has no Sun): the first ships, and one lifted off the plane.
+	g.use_j2 = true
+	g.use_moons = true
+	var stms := []
+	var ships := ship_cases().slice(0, 2)
+	ships.append({"name": ships[0].name + " (off the plane)", "r": [ships[0].r[0], ships[0].r[1], 4.0e4], "v": ships[0].v})
+	for c in ships:
+		var st := g.coast_stm(V.from(c.r), V.from(c.v), 0.0, 6.0 * 3600.0)
+		stms.append({"name": c.name, "r": c.r, "v": c.v, "t0": 0.0, "dt": 6.0 * 3600.0, "r1": arr(st[0]), "v1": arr(st[1]), "phi": mat(st[2])})
+	return {"accel": acc, "coast": coasts, "stm": stms}
 
 
 func moons(cases: Dictionary) -> Dictionary:
@@ -424,7 +434,7 @@ func tracking(cases: Dictionary) -> Dictionary:
 ## equator and over the pole, at four distances behind it, and the share of
 ## the Sun each sees (Thermal.lit_share, Jupiter alone).
 func shadow() -> Dictionary:
-	var sim := Sim.new()
+	var sim := Sim.new("res://data/game.json", "res://tests/fixtures/jupiter_shadow.json")
 	var sun := Ephem.exact("sun", sim.utc_ms(0.0))
 	var sh := V.scale(sun, 1.0 / V.norm(sun))
 	var u := V.cross(sh, V.of(0, 0, 1))
@@ -447,7 +457,7 @@ func shadow() -> Dictionary:
 ## A skin cooling into shadow and warming out of it (Thermal.skin_step), each
 ## hour for six hours, for HYDRA's class.
 func skin() -> Dictionary:
-	var sim := Sim.new()
+	var sim := Sim.new("res://data/game.json", "res://tests/fixtures/jupiter_shadow.json")
 	var s: Dictionary = sim.by_id["hydra"]
 	var S := Thermal.sun_flux(sim.data)
 	var C := Thermal.heat_capacity(s)

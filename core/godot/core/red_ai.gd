@@ -1,16 +1,8 @@
-## Red's behaviour, one brain per role. Red flies by the same physics as Blue
-## and knows only what its own sensors and its handler tell it.
-## - tender: stalks INDUSTRIAL INTENT for a rendezvous (an RPO, the real
-##   inspector behaviour reported of Luch/Olymp-K); corrects its transfer under
-##   real gravity; goes quiet when hunted; dodges; gives up when the fuel to
-##   finish the job runs out or a Blue warship guards the freighter.
-## - relay: sits at a Lagrange point and passes the handler's orders; on the
-##   wake day it sends the sleeper its activation.
-## - inspector: shadows HYDRA and tells the network where Blue's hunter is.
-## - sleeper: silent and cold until woken; then a co-orbital intercept on
-##   EXCALIBUR (after Cosmos 2543's 2020 co-orbital test, USSPACECOM).
-## Red's links to its handler: jammed, spoofed, captured or a dead relay all
-## cut the commands that keep its plans fresh.
+## Red's behaviour. Red flies by the same physics as Blue and knows only what
+## its own sensors and its handler tell it. Every Red ship reports home and
+## keeps its heat down; one with the role "shadow" (plan.target, plan.legs)
+## inspects its target up close (_shadow). Red's links to its handler: jammed,
+## spoofed or captured cut the commands that keep its plans fresh.
 class_name RedAI
 extends RefCounted
 
@@ -23,7 +15,6 @@ var sim: Sim:
 	set(v):
 		_sim = weakref(v)
 var _sim := WeakRef.new()
-var knows := {} # red id -> {blue id: true} from its own sensors and the inspector
 
 
 func _init(sim_: Sim) -> void:
@@ -36,15 +27,7 @@ func _init(sim_: Sim) -> void:
 			s.ai.state = "phase"
 			s.ai.leg = 0
 			s.ai.last_link = 0.0
-	if sim.by_id.has("h1") and sim.by_id.h1.get("role", "") == "tender":
-		var h: Dictionary = sim.by_id.h1
-		h.ai.state = "stalk"
-		h.ai.arrival = float(sim.data.scenario.hostileArrival)
-		h.ai.next_tx = 2.0 * H
-	if sim.by_id.has("r2"):
-		sim.by_id.r2.ai.state = "wait"
-	if sim.by_id.has("r3"):
-		sim.by_id.r3.ai.state = "dormant"
+			s.ai.legs = (s.plan.legs as Array).duplicate(true) # its own copy: reactions add and change legs
 
 
 func _first_tx(s: Dictionary) -> float:
@@ -55,29 +38,22 @@ func _first_tx(s: Dictionary) -> float:
 
 ## Is this Red ship still taking orders from its handler?
 func linked(s: Dictionary) -> bool:
-	if s.get("jammed_until", -1.0) > sim.t or s.get("captured", false) or s.get("disabled", false):
-		return false
-	if s.id != "r1" and sim.by_id.has("r1"):
-		var relay: Dictionary = sim.by_id.r1
-		if not relay.alive or relay.get("captured", false) or relay.get("disabled", false):
-			return false
-	return true
+	return not (s.get("jammed_until", -1.0) > sim.t or s.get("captured", false) or s.get("disabled", false))
 
 
 func can_see(s: Dictionary) -> bool:
 	return s.get("dazzled_until", -1.0) <= sim.t and not s.get("disabled", false)
 
 
-## Which Blue warships does this Red ship know about, and how?
+## Which Blue warships and inspectors does this Red ship know about, and how?
 func threats(s: Dictionary) -> Array:
 	var out := []
 	for b in sim.blue_ships():
-		if b.kind != "warship":
+		if not b.kind in ["warship", "inspector"]:
 			continue
 		var seen: bool = can_see(s) and s.cls.has("ir") and sim.sensing.ir_sees(s, b)
-		var told: bool = knows.get(s.id, {}).has(b.id) and linked(s)
 		var loud := float(b.get("loud_until", -1.0)) > sim.t
-		if seen or told or loud:
+		if seen or loud:
 			var d := V.sub(b.r, s.r)
 			var closing := V.dot(d, V.sub(b.v, s.v)) < 0.0
 			out.append({"s": b, "range": V.norm(d), "closing": closing, "burning": sim.burning(b.id) and seen, "loud": loud})
@@ -85,170 +61,37 @@ func threats(s: Dictionary) -> Array:
 
 
 func think() -> void:
-	knows.clear()
-	# The inspector tells the network what it sees.
-	if sim.by_id.has("r2") and sim.by_id.r2.alive and not sim.by_id.r2.get("disabled", false) and linked(sim.by_id.r2):
-		var insp: Dictionary = sim.by_id.r2
-		for b in sim.blue_ships():
-			if can_see(insp) and sim.sensing.ir_sees(insp, b):
-				for r in sim.red_ships():
-					if not knows.has(r.id):
-						knows[r.id] = {}
-					knows[r.id][b.id] = true
 	for s in sim.red_ships():
 		if not s.alive or s.get("captured", false) or s.get("disabled", false):
 			continue
 		_talk(s)
 		_heat(s)
-		match s.role:
-			"tender": _tender(s)
-			"relay": _relay(s)
-			"inspector": _inspector(s)
-			"sleeper": _sleeper(s)
-			"shadow": _shadow(s)
+		if s.role == "shadow":
+			_shadow(s)
 
 
-## Reports home on a habit, unless it feels hunted.
+## Reports home on a habit, unless it feels hunted: one of ours burning, loud,
+## or closing within camp.quiet_km (150,000 km at Jupiter; at the Earth the
+## scenario sets it). With a handler on the ground (camp.handler) it can only
+## talk while the station is above its horizon mask; a report due meanwhile
+## waits for the next pass.
 func _talk(s: Dictionary) -> void:
-	if not s.cls.has("ttc") or s.role == "sleeper":
+	if not s.cls.has("ttc"):
 		return
 	var ai: Dictionary = s.ai
 	var hunted := false
+	var quiet_km := float(sim.camp.get("quiet_km", 150000.0))
 	for th in threats(s):
-		if th.burning or th.loud or (th.range < 150000.0 and th.closing):
+		if th.burning or th.loud or (th.range < quiet_km and (th.closing or quiet_km < 1000.0)):
 			hunted = true
 	if hunted and ai.silent_until < sim.t:
 		if sim.tracks.has(s.id):
 			sim.say("red_quiet", Lang.f("red_quiet", [sim.sensing.label_for(s.id)]), "warn")
 	if hunted:
 		ai.silent_until = maxf(ai.silent_until, sim.t + 6.0 * H)
-	if sim.t >= ai.next_tx and sim.t >= ai.silent_until:
+	if sim.t >= ai.next_tx and sim.t >= ai.silent_until and in_view(s):
 		s.bursts.append({"start": sim.t, "end": sim.t + float(s.cls.ttc.burst), "kind": "ttc"})
 		ai.next_tx = sim.t + sim.stream("red").randf_range(float(s.cls.ttc.every[0]), float(s.cls.ttc.every[1]))
-
-
-func _mv() -> Dictionary:
-	return sim.by_id.get("mv", {})
-
-
-## Δv to finish the rendezvous: transfer now, then match the freighter.
-func _need(s: Dictionary, arrive: float) -> Dictionary:
-	var mv := _mv()
-	var f: Array = sim.predict_state(mv.r, mv.v, (arrive - sim.t) / H, maxi(8, int((arrive - sim.t) / 1800.0)))
-	var fr: PackedFloat64Array = f.back()
-	var sol := Lambert.solve(s.r, fr, arrive - sim.t, sim.mu)
-	if sol.is_empty():
-		return {"dv": INF}
-	var fv: PackedFloat64Array = Kepler.propagate(mv.r, mv.v, arrive - sim.t, sim.mu)[1]
-	return {"dv": V.norm(V.sub(sol[0], s.v)) + V.norm(V.sub(fv, sol[1])), "v1": sol[0], "node": fr}
-
-
-func _tender(s: Dictionary) -> void:
-	var ai: Dictionary = s.ai
-	var mv := _mv()
-	if ai.state == "docked":
-		if sim.t - ai.docked_at > float(sim.data.cfg.get("boardingSeconds", 3600.0)) and not ai.get("boarded", false):
-			ai.boarded = true
-			sim.say("boarded", Lang.f("boarded", []), "alert")
-		else:
-			s.r = mv.r
-			s.v = mv.v
-		return
-	if ai.state != "stalk":
-		return
-	var left: float = ai.arrival - sim.t
-	if left <= 0.0:
-		if V.dist(s.r, mv.r) < 200.0:
-			sim.burn(s.id, V.sub(mv.v, s.v)) # match her velocity: a burn the sensors see
-			ai.state = "docked"
-			ai.docked_at = sim.t
-			sim.say("docked", Lang.f("docked", [sim.sensing.label_for(s.id)]), "alert")
-		else:
-			ai.state = "missed"
-		return
-	# Guarded: a known Blue warship close to the freighter near the end means it can't board.
-	if left < 6.0 * H:
-		for th in threats(s):
-			if V.dist(th.s.r, mv.r) < 30000.0:
-				ai.state = "aborted"
-				sim.burn(s.id, V.scale(V.of(s.v[0], s.v[1]), minf(1.0, sim.delta_v(s.id)) / V.norm(s.v)))
-				sim.say("red_abort", Lang.f("red_abort", [sim.sensing.label_for(s.id)]), "good")
-				return
-	# Its handler keeps its transfer accurate: course corrections need the link
-	# (and spoofed ranging makes them aim wrong).
-	var due: bool = int(ai.fixes) < 3 and left < float(sim.data.scenario.hostileArrival) * (1.0 - 0.3 * (int(ai.fixes) + 1))
-	var close: bool = left < 2.0 * H and V.dist(s.r, mv.r) < 8000.0 and can_see(s) and not ai.get("terminal", false)
-	if (due and linked(s)) or close:
-		var need := _need(s, ai.arrival)
-		if need.dv > sim.delta_v(s.id):
-			ai.state = "aborted"
-			sim.say("red_abort", Lang.f("red_abort", [sim.sensing.label_for(s.id)]), "good")
-			return
-		var err: float = float(s.get("spoof_err_km", 0.0))
-		var aim: PackedFloat64Array = need.v1
-		if err > 0.0 and not close:
-			# Ranging pulled off by `err` km: it corrects toward a point that far off.
-			var sol := Lambert.solve(V.add(s.r, V.of(err, -err * 0.5)), need.node, left, sim.mu)
-			if not sol.is_empty():
-				aim = sol[0]
-		sim.burn(s.id, V.sub(aim, s.v))
-		if close:
-			ai.terminal = true
-		else:
-			ai.fixes = int(ai.fixes) + 1
-	# Dodge a closing warship, once in a while, if it can still afford the job.
-	if int(ai.evasions) > 0 and left > 3.0 * H and sim.t - float(ai.last_evade) > 3.0 * H and sim.t - float(ai.get("last_dodge_check", -1e9)) >= H:
-		ai.last_dodge_check = sim.t
-		for th in threats(s):
-			if th.closing and th.range < 150000.0:
-				var later := _need(s, ai.arrival + 3.0 * H)
-				if later.dv < sim.delta_v(s.id) * 0.9:
-					sim.burn(s.id, V.sub(later.v1, s.v))
-					ai.arrival += 3.0 * H
-					ai.evasions = int(ai.evasions) - 1
-					ai.last_evade = sim.t
-					if sim.tracks.has(s.id):
-						sim.say("red_dodge", Lang.f("red_dodge", [sim.tracks[s.id].label]), "warn")
-				break
-
-
-func _relay(s: Dictionary) -> void:
-	var plan: Dictionary = sim.by_id.r3.plan if sim.by_id.has("r3") else {}
-	if plan.is_empty() or sim.by_id.r3.ai.state != "dormant":
-		return
-	if sim.t >= float(plan.wake_day - 1) * Sim.DAY and float(s.ai.get("wake_try", -1e9)) < sim.t - 6.0 * H:
-		s.ai.wake_try = sim.t
-		# A long, high-power burst: hard to miss. If it is jammed, the sleeper doesn't hear it.
-		s.bursts.append({"start": sim.t, "end": sim.t + 300.0, "kind": "wake", "power": 4.0, "aim_at": "r3"})
-		if linked(s):
-			sim.by_id.r3.ai.state = "woken"
-			sim.by_id.r3.ai.woke_at = sim.t
-
-
-func _inspector(s: Dictionary) -> void:
-	var ai: Dictionary = s.ai
-	var plan: Dictionary = s.plan
-	var tgt: Dictionary = sim.by_id.get("hydra", {})
-	if tgt.is_empty() or not tgt.alive:
-		return
-	if ai.state == "wait" and sim.t >= float(plan.depart_day - 1) * Sim.DAY:
-		ai.state = "shadow"
-	if ai.state != "shadow" or not linked(s):
-		return
-	# Every 12 h, re-aim to arrive 20,000 km off HYDRA in 24 h, while fuel lasts.
-	if sim.t - float(ai.get("last_plan", -1e9)) < 12.0 * H:
-		return
-	ai.last_plan = sim.t
-	var f: Array = sim.predict_state(tgt.r, tgt.v, 24.0, 48)
-	var node: PackedFloat64Array = V.add(f.back(), V.of(14000.0, 14000.0))
-	var sol := Lambert.solve(s.r, node, 24.0 * H, sim.mu)
-	if sol.is_empty():
-		return
-	var dv := V.sub(sol[0], s.v)
-	if V.norm(dv) < sim.delta_v(s.id) * 0.6:
-		sim.burn(s.id, dv)
-		if sim.tracks.has(s.id) and V.dist(s.r, tgt.r) < 60000.0:
-			sim.say("inspector_close", Lang.f("inspector_close", [sim.tracks[s.id].label, "HYDRA"]), "warn")
 
 
 ## The shadowing: an uncooperative rendezvous and proximity operation on Blue's
@@ -265,7 +108,33 @@ func _inspector(s: Dictionary) -> void:
 ## threatens it (design values). So jamming from afar stalls it; it takes
 ## jamming and presence together to make it leave.
 ## Running out of legs means the inspection is complete.
+## It watches our inspector too, through its own telescope (threats()), each
+## time it settles in a slot (design values, after how visiting vehicles and
+## inspectors keep a keep-out zone and abort when it is broken):
+## - crowded (one of ours within CROWD_KM of it): it gives up the slot for
+##   one EVADE_KM on the far side of its target from ours; after EVASIONS of
+##   those, crowded again, it gives the inspection up and leaves;
+## - alone (none of ours seen within ALONE_KM): it pushes in, taking its next
+##   slot at half the distance (no nearer than CLOSEST_KM).
+## So you drive it off by staying on it, and it gets closest when you are away.
+## Tension (sim.escalation) runs both ways, where the scenario sets it
+## (camp.escalation; design values):
+## - it rises when it parks inside the keep-out of its target (redInside),
+##   each time ours crowd it into giving way (blueCrowd), and for every hour
+##   one of ours is within the keep-out of it (blueTooClosePerHour);
+## - at cautiousAt or more it gives way once fewer and no longer pushes in
+##   when alone; at leaveAt or more it leaves at the first crowding.
+## So pressing hard drives it off sooner, at a price in tension.
 const LOST_H := 3.0
+const CROWD_KM := 5.0
+const EVADE_KM := 8.0
+const EVASIONS := 2
+const ALONE_KM := 50.0
+const CLOSEST_KM := 0.5
+## No hop passes nearer its target than this (km): a hop straight along the
+## target's orbit passes through it, so it takes the cheapest that stays clear.
+const SAFE_PASS_KM := 0.4
+const SHIFT_LOOKS := 4
 const PRESENCE_KM := 25.0 # design value: wide enough that one MATCH keeps you inside it for the 3 h cut-off (a match drifts ~20 km in 3 h)
 
 
@@ -292,6 +161,7 @@ func _shadow(s: Dictionary) -> void:
 	if up:
 		ai.last_link = sim.t
 	var rng := V.dist(s.r, tgt.r)
+	_tension(s)
 	match ai.state:
 		"retreat":
 			if rng > 200.0:
@@ -302,10 +172,12 @@ func _shadow(s: Dictionary) -> void:
 			if sim.t >= float(ai.match_at) - 1.0:
 				sim.burn(s.id, V.sub(_slot_v(s, tgt), s.v))
 				ai.state = "hold"
-				ai.hold_until = sim.t + float(s.plan.legs[ai.leg][1]) * H
+				ai.hold_until = sim.t + float(ai.legs[ai.leg][1]) * H
 				_report(s)
+				if rng < _keep_out():
+					_raise("redInside", "shadow_inside" if sim.tracks.has(s.id) else "")
 				if sim.tracks.has(s.id):
-					sim.say("shadow_hold", Lang.f("shadow_hold", [_label(s), _where_rel(float(s.plan.legs[ai.leg][0])), tgt.short]), "warn", {"from": s.id})
+					sim.say("shadow_hold", Lang.f("shadow_hold", [_label(s), _where_rel(float(ai.legs[ai.leg][0])), tgt.short]), "warn", {"from": s.id})
 	var cut_off: bool = ai.state in ["match", "hold"] and rng < 200.0 and sim.t - float(ai.last_link) > LOST_H * H
 	if cut_off and _shadowed_by(s) == "":
 		# Cut off but nobody alongside: it holds and waits for its link.
@@ -320,10 +192,38 @@ func _shadow(s: Dictionary) -> void:
 		return
 	if not up:
 		return
+	if ai.state == "hold":
+		var near := _nearest_watcher(s)
+		if not near.is_empty() and float(near.range) < CROWD_KM:
+			_raise("blueCrowd", "")
+			if int(ai.get("evaded", 0)) >= _evasions():
+				# Crowded again after giving way: it gives the inspection up.
+				sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), 0.004))
+				ai.state = "retreat"
+				sim.say("shadow_driven", Lang.f("shadow_driven", [_label(s), tgt.short]), "good", {"from": s.id})
+				return
+			# Give way: a slot on the far side of the target from ours, then on with the plan.
+			ai.evaded = int(ai.get("evaded", 0)) + 1
+			var side := signf(V.dot(V.sub(near.s.r, tgt.r), tgt.v))
+			ai.legs.insert(int(ai.leg) + 1, [-(side if side != 0.0 else 1.0) * EVADE_KM, 4.0, 2.0])
+			ai.leg = int(ai.leg) + 1
+			_hop(s, tgt)
+			if ai.state == "match":
+				sim.say("shadow_crowded", Lang.f("shadow_crowded", [_label(s), tgt.short]), "good", {"from": s.id})
+			return
 	if ai.state == "phase" or (ai.state == "hold" and sim.t >= float(ai.hold_until)):
 		if ai.state == "hold":
 			ai.leg = int(ai.leg) + 1
-		if int(ai.leg) >= s.plan.legs.size():
+			# Nobody of ours in sight: it takes its next slot nearer.
+			var near := _nearest_watcher(s)
+			if int(ai.leg) < ai.legs.size() and (near.is_empty() or float(near.range) > ALONE_KM) and sim.escalation < _esc("cautiousAt", INF):
+				var leg: Array = ai.legs[ai.leg]
+				var along := float(leg[0])
+				if absf(along) > CLOSEST_KM:
+					leg[0] = signf(along) * maxf(CLOSEST_KM, absf(along) * 0.5)
+					if sim.tracks.has(s.id):
+						sim.say("shadow_push", Lang.f("shadow_push", [_label(s), tgt.short]), "warn", {"from": s.id})
+		if int(ai.leg) >= ai.legs.size():
 			ai.state = "complete"
 			sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), 0.004))
 			sim.say("shadow_done", Lang.f("shadow_done", [_label(s), tgt.short]), "alert", {"from": s.id})
@@ -331,18 +231,104 @@ func _shadow(s: Dictionary) -> void:
 		_hop(s, tgt)
 
 
+## A tension setting from the scenario (camp.escalation), or `or_else`.
+func _esc(key: String, or_else: float) -> float:
+	return float(sim.camp.get("escalation", {}).get(key, or_else))
+
+
+func _keep_out() -> float:
+	return float(sim.camp.get("keep_out_km", 1.0))
+
+
+## How many times it gives way before it leaves: fewer as tension rises.
+## In the walkthrough, the scenario's tutorial.evasions (CLOSE PASS: once, so
+## following the steps wins it).
+func _evasions() -> int:
+	var most := int(sim.camp.get("tutorial", {}).get("evasions", EVASIONS)) if sim.tutorial else EVASIONS
+	if sim.escalation >= _esc("leaveAt", INF):
+		return 0
+	if sim.escalation >= _esc("cautiousAt", INF):
+		return maxi(0, most - 1)
+	return most
+
+
+## Raise the tension by the scenario's `key`, saying so with `code` if any.
+func _raise(key: String, code: String) -> void:
+	var by := _esc(key, 0.0)
+	if by <= 0.0:
+		return
+	sim.effects.escalate(by, key)
+	if code != "":
+		sim.say(code, Lang.f(code, [int(roundf(by))]), "warn")
+
+
+## Each look: one of ours inside the keep-out of it raises the tension.
+func _tension(s: Dictionary) -> void:
+	var per_h := _esc("blueTooClosePerHour", 0.0)
+	if per_h <= 0.0 or not s.ai.state in ["phase", "match", "hold"]:
+		return
+	for b in sim.blue_ships():
+		if b.alive and b.kind in ["warship", "inspector"] and V.dist(b.r, s.r) < _keep_out():
+			var was := sim.escalation
+			sim.effects.escalate(per_h * Sim.LOOK / H, "blue_close")
+			if int(was / 10.0) != int(sim.escalation / 10.0) or not s.ai.get("told_close", false):
+				s.ai.told_close = true
+				sim.say("blue_too_close", Lang.f("blue_too_close", [String(b.short), _label(s), int(sim.escalation)]), "warn")
+			return
+
+
+## The nearest of our inspectors and warships this ship knows of:
+## {s, range}, or {} when it sees none.
+func _nearest_watcher(s: Dictionary) -> Dictionary:
+	var best := {}
+	for th in threats(s):
+		if best.is_empty() or float(th.range) < float(best.range):
+			best = th
+	return best
+
+
 ## Go to the next leg's slot: Lambert, corrected under full gravity, arriving on a look.
+## When the hop takes more than an orbit (in low orbit a few hours is a few
+## turns) Lambert's arcs of all its turns are weighed, and the shooting
+## (Sim._shoot) corrects the one taken, as single-turn re-aiming would lose
+## the turns.
+## A hop along the target's orbit loops above and below it, and where it
+## crosses the target depends on when it arrives: so it weighs arriving up to
+## SHIFT_LOOKS looks early or late, and takes the cheapest that keeps
+## SAFE_PASS_KM from the target all the way (if none does, the one that keeps
+## furthest). The weighing is two-body throughout (_arc); the pulls it leaves
+## out are nearly the same on both craft, so the passes hold under full gravity.
 func _hop(s: Dictionary, tgt: Dictionary) -> void:
 	var ai: Dictionary = s.ai
-	var leg: Array = s.plan.legs[ai.leg]
-	var tof := maxf(1.0, roundf(float(leg[2]) * H / Sim.LOOK)) * Sim.LOOK
+	var leg: Array = ai.legs[ai.leg]
+	var looks := maxf(1.0, roundf(float(leg[2]) * H / Sim.LOOK))
+	var pick := {}
+	for k in range(-SHIFT_LOOKS, SHIFT_LOOKS + 1):
+		if looks + k < 1.0:
+			continue
+		var arc := _arc(s, tgt, float(leg[0]), (looks + k) * Sim.LOOK)
+		if arc.is_empty():
+			continue
+		var clear := float(arc.pass_km) >= SAFE_PASS_KM
+		var better: bool = pick.is_empty() 			or (clear and (not pick.clear or float(arc.cost) < float(pick.cost))) 			or (not clear and not pick.clear and float(arc.pass_km) > float(pick.pass_km))
+		if better:
+			pick = arc
+			pick.clear = clear
+	if pick.is_empty():
+		return
+	var tof := float(pick.tof)
+	var turns := int(pick.turns)
+	var v1: PackedFloat64Array = pick.v1
 	var st := sim.gravity.coast(tgt.r, tgt.v, sim.t, tof, 60.0)
 	var node := V.add(st[0], V.scale(V.scale(st[1], 1.0 / V.norm(st[1])), float(leg[0])))
-	var sol := Lambert.solve(s.r, node, tof, sim.mu)
-	if sol.is_empty():
-		return
-	var plan := {"id": s.id, "node": node, "arrive": sim.t + tof, "dv_vec": V.sub(sol[0], s.v)}
-	sim.refine(plan)
+	var plan := {"id": s.id, "node": node, "arrive": sim.t + tof, "dv_vec": V.sub(v1, s.v)}
+	if turns > 0:
+		var sh := sim._shoot(s.id, v1, node, tof)
+		if float(sh[1]) > 1.0:
+			return
+		plan.dv_vec = V.sub(sh[0], s.v)
+	else:
+		sim.refine(plan)
 	if V.norm(plan.dv_vec) * 2.2 > sim.delta_v(s.id):
 		ai.state = "complete"
 		return
@@ -352,18 +338,66 @@ func _hop(s: Dictionary, tgt: Dictionary) -> void:
 	_report(s)
 
 
+## A hop to `along` km from the target taking tof, two-body throughout: the
+## cheapest of Lambert's arcs of all the turns, with how close it passes the
+## target on the way. {v1, cost, pass_km, tof, turns}, or {} for none.
+func _arc(s: Dictionary, tgt: Dictionary, along: float, tof: float) -> Dictionary:
+	var end := Kepler.propagate(tgt.r, tgt.v, tof, sim.mu)
+	var node := V.add(end[0], V.scale(V.scale(end[1], 1.0 / V.norm(end[1])), along))
+	var a := Kepler.semi_major_axis(s.r, s.v, sim.mu)
+	var turns := int(tof / (TAU * sqrt(pow(a, 3.0) / sim.mu))) if a > 0.0 else 0
+	var all := Lambert.solve_all(s.r, node, tof, sim.mu, true, turns, V.cross(s.r, s.v))
+	if all.is_empty():
+		return {}
+	var v1: PackedFloat64Array = all[0].v1
+	for o in all:
+		if V.dist(o.v1, s.v) < V.dist(v1, s.v):
+			v1 = o.v1
+	# The closest it passes: both coasted in steps of about two minutes.
+	var p := [s.r, v1]
+	var q := [tgt.r, tgt.v]
+	var n := maxi(30, int(tof / 120.0))
+	var least := V.dist(p[0], q[0])
+	for i in n:
+		p = Kepler.propagate(p[0], p[1], tof / n, sim.mu)
+		q = Kepler.propagate(q[0], q[1], tof / n, sim.mu)
+		least = minf(least, V.dist(p[0], q[0]))
+	return {"v1": v1, "cost": V.dist(v1, s.v), "pass_km": least, "tof": tof, "turns": turns}
+
+
 ## The velocity that keeps it in its slot: the target's, turned through the
-## angle between them, so it rides the same circular orbit a little ahead or behind.
+## angle between them, so it rides the same circular orbit a little ahead or
+## behind. Off the game's plane (at the Earth) Sim.station_v does it in 3-D.
 func _slot_v(s: Dictionary, tgt: Dictionary) -> PackedFloat64Array:
+	if s.r.size() > 2 and (absf(float(s.r[2])) > 1e-6 or absf(float(tgt.v[2])) > 1e-9):
+		return sim.station_v(s.r, tgt.r, tgt.v)
 	var a := atan2(tgt.r[0] * s.r[1] - tgt.r[1] * s.r[0], V.dot(tgt.r, s.r))
 	var v: PackedFloat64Array = tgt.v
 	return V.of(v[0] * cos(a) - v[1] * sin(a), v[0] * sin(a) + v[1] * cos(a))
 
 
 ## Each manoeuvre is followed by a report home: something for Blue to hear.
+## Out of sight of its ground station, the report waits for the next pass.
 func _report(s: Dictionary) -> void:
-	if s.cls.has("ttc") and sim.t >= float(s.ai.silent_until):
-		s.bursts.append({"start": sim.t, "end": sim.t + float(s.cls.ttc.burst), "kind": "ttc"})
+	if not s.cls.has("ttc") or sim.t < float(s.ai.silent_until):
+		return
+	if not in_view(s):
+		s.ai.next_tx = minf(float(s.ai.next_tx), sim.t)
+		return
+	s.bursts.append({"start": sim.t, "end": sim.t + float(s.cls.ttc.burst), "kind": "ttc"})
+
+
+## Can this ship talk to its handler now? Always, but for a handler on the
+## ground (camp.handler.ground): then only while the station sees it above
+## its mask (camp.handler.min_el_deg) and the Earth is not in between.
+func in_view(s: Dictionary) -> bool:
+	var hd: Dictionary = sim.camp.get("handler", {})
+	if not hd.has("ground"):
+		return true
+	var g := sim.handler_pos()
+	var d := V.sub(s.r, g)
+	var el := asin(clampf(V.dot(d, g) / (V.norm(d) * V.norm(g)), -1.0, 1.0))
+	return el >= deg_to_rad(float(hd.get("min_el_deg", 10.0)))
 
 
 func _label(s: Dictionary) -> String:
@@ -374,47 +408,8 @@ func _where_rel(along: float) -> String:
 	return ("%s ahead of" if along > 0.0 else "%s behind") % Lang.km(absf(along))
 
 
-func _sleeper(s: Dictionary) -> void:
-	var ai: Dictionary = s.ai
-	var tgt: Dictionary = sim.by_id.get("excal", {})
-	if tgt.is_empty():
-		return
-	if ai.state == "woken" and sim.t - float(ai.woke_at) > 2.0 * H:
-		# Its strike: arrive on EXCALIBUR in 30 h.
-		var f: Array = sim.predict_state(tgt.r, tgt.v, 30.0, 60)
-		var sol := Lambert.solve(s.r, f.back(), 30.0 * H, sim.mu)
-		if not sol.is_empty() and V.norm(V.sub(sol[0], s.v)) < sim.delta_v(s.id):
-			sim.burn(s.id, V.sub(sol[0], s.v))
-			ai.state = "strike"
-			ai.arrival = sim.t + 30.0 * H
-			ai.fixes = 0
-			sim.say("sleeper_burn", Lang.f("sleeper_burn", [_where(s)]), "alert")
-		return
-	if ai.state != "strike":
-		return
-	var left: float = ai.arrival - sim.t
-	var d := V.dist(s.r, tgt.r)
-	if d < float(s.cls.kill_km) and tgt.alive:
-		tgt.alive = false
-		ai.state = "done"
-		sim.say("excal_dead", Lang.f("excal_dead", []), "alert")
-		return
-	# Homing: it needs its own IR on the target. Blinded, it flies on blind and misses.
-	if left > 0.0 and left < 15.0 * H and can_see(s) and sim.sensing.ir_sees(s, tgt) and int(ai.fixes) < 4 and sim.t - float(ai.get("last_fix", -1e9)) > 3.0 * H:
-		var f: Array = sim.predict_state(tgt.r, tgt.v, left / H, maxi(8, int(left / 1800.0)))
-		var sol := Lambert.solve(s.r, f.back(), maxf(left, 600.0), sim.mu)
-		if not sol.is_empty():
-			var dv := V.sub(sol[0], s.v)
-			if V.norm(dv) < sim.delta_v(s.id):
-				sim.burn(s.id, dv)
-				ai.fixes = int(ai.fixes) + 1
-				ai.last_fix = sim.t
-	if left < -6.0 * H:
-		ai.state = "spent"
-
-
 ## Heat discipline: go dark on the heat sink while any Blue telescope it knows
-## of (warships it has seen or been told of, and Ganymede's fixed site) would
+## of (warships it has seen or been told of, and our stations' fixed ones) would
 ## still see the radiator's edge, and put off refreezing the sink while the
 ## extra heat that takes would show.
 func _heat(s: Dictionary) -> void:
@@ -425,8 +420,9 @@ func _heat(s: Dictionary) -> void:
 	for th in threats(s):
 		if th.s.cls.has("ir"):
 			eyes.append(th.s)
-	if sim.by_id.has("gstn") and sim.by_id.gstn.alive:
-		eyes.append(sim.by_id.gstn)
+	for b in sim.blue_ships():
+		if b.kind == "station" and b.alive and b.cls.has("ir"):
+			eyes.append(b)
 	if eyes.is_empty():
 		return
 	var Q := Thermal.waste(s.cls)
@@ -450,6 +446,3 @@ func _shows(s: Dictionary, eyes: Array, Q: float) -> bool:
 			return true
 	return false
 
-
-func _where(s: Dictionary) -> String:
-	return sim.sensing._where(s.r)

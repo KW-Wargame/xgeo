@@ -2,7 +2,7 @@
 ## write what happens as JSON lines, one object per line.
 ##   godot --headless --path godot --script res://cli/run.gd -- [options]
 ## Options (all optional):
-##   --scenario=res://data/campaign.json   the scenario file ("" for none)
+##   --scenario=res://data/scenarios/close_pass_earth.json   the scenario file ("" for none)
 ##   --hours=24        how long to run (sim hours)
 ##   --step=600        seconds between snapshots (the sensor look is 600 s)
 ##   --seed=N          the master random seed (default: the scenario's)

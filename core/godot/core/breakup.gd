@@ -51,11 +51,11 @@ static func fragments(M: float, lc := LC_MIN) -> int:
 	return int(floor(0.1 * pow(M, 0.75) * pow(lc, -1.71)))
 
 
-## Draw Lc (m) from the collision power law between LC_MIN and LC_MAX.
-static func _draw_lc(rng: RandomNumberGenerator) -> float:
-	var k := 1.71
-	var lo := pow(LC_MIN, -k)
-	var hi := pow(LC_MAX, -k)
+## Draw Lc (m) from the power law N(>Lc) ∝ Lc^-k between lmin and lmax
+## (collisions k = 1.71, explosions 1.6).
+static func _draw_lc(rng: RandomNumberGenerator, k := 1.71, lmin := LC_MIN, lmax := LC_MAX) -> float:
+	var lo := pow(lmin, -k)
+	var hi := pow(lmax, -k)
 	return pow(lo - rng.randf() * (lo - hi), -1.0 / k)
 
 
@@ -87,6 +87,95 @@ static func _draw_chi(lc: float, rng: RandomNumberGenerator) -> float:
 ## Ejection speed (km/s) for a fragment of area-to-mass χ.
 static func _draw_dv(chi: float, rng: RandomNumberGenerator) -> float:
 	return pow(10.0, rng.randfn(0.9 * chi + 2.9, 0.4)) / 1000.0
+
+
+## Fragments of Lc or larger (m) from an explosion of scaling factor S
+## (1 for a typical rocket body or spacecraft; Johnson et al. 2001).
+static func explosion_fragments(S: float, lc := LC_MIN) -> int:
+	return int(floor(6.0 * S * pow(lc, -1.6)))
+
+
+## A fragment's average cross-section (m²) for its characteristic length Lc (m)
+## (Johnson et al. 2001).
+static func area(lc: float) -> float:
+	if lc < 0.00167:
+		return 0.540424 * lc * lc
+	return 0.556945 * pow(lc, 2.0047077)
+
+
+## χ = log10(A/m) for a fragment of a rocket body (upper stage): the large-object
+## law above 11 cm (Johnson et al. 2001), the
+## same small-object law as a spacecraft's below 1.7 cm, blended between.
+static func _draw_chi_rb(lc: float, rng: RandomNumberGenerator) -> float:
+	var l := log(lc) / log(10.0)
+	var w := _ramp(l, log(0.017) / log(10.0), 0.0, log(0.11) / log(10.0), 1.0)
+	if rng.randf() >= w:
+		return rng.randfn(_ramp(l, -1.75, -0.3, -1.25, -1.0), 0.2 + 0.1333 * maxf(l + 3.5, 0.0))
+	var alpha := _ramp(l, -1.4, 1.0, 0.0, 0.5) # = 1 - 0.3571(λc + 1.4) between the ends
+	var mu1 := _ramp(l, -0.5, -0.45, 0.0, -0.9)
+	var s2 := _ramp(l, -1.0, 0.28, 0.1, 0.1)
+	if rng.randf() < alpha:
+		return rng.randfn(mu1, 0.55)
+	return rng.randfn(-0.9, s2)
+
+
+## The fragments of a breakup as the model draws them, for Earth orbit and
+## smaller sizes than cloud() flies: kind "collision" (size: the collision mass
+## M, kg) or "explosion" (size: the scaling factor S); body "sc" (spacecraft)
+## or "rb" (rocket body); Lc between lc_min and lc_max (m; the model is stated
+## down to 1 mm). k draws, each standing for n / k fragments: {n, lc, am
+## (m²/kg), area (m²), mass (kg), dv (km/s)}. Explosion speeds: log10 Δv (m/s)
+## ~ N(0.2χ + 1.85, 0.4) (Johnson et al. 2001).
+static func sample(kind: String, size: float, body: String, lc_min: float, lc_max: float, k: int, rng: RandomNumberGenerator) -> Dictionary:
+	var explosion := kind == "explosion"
+	var n: int
+	if explosion:
+		n = explosion_fragments(size, lc_min) - explosion_fragments(size, lc_max)
+	else:
+		n = fragments(size, lc_min) - fragments(size, lc_max)
+	var out := {"n": n, "lc": PackedFloat64Array(), "am": PackedFloat64Array(), "area": PackedFloat64Array(), "mass": PackedFloat64Array(), "dv": PackedFloat64Array()}
+	for i in k:
+		var lc := _draw_lc(rng, 1.6 if explosion else 1.71, lc_min, lc_max)
+		var chi := _draw_chi_rb(lc, rng) if body == "rb" else _draw_chi(lc, rng)
+		var dv := pow(10.0, rng.randfn(0.2 * chi + 1.85, 0.4)) / 1000.0 if explosion else _draw_dv(chi, rng)
+		var a := area(lc)
+		out.lc.append(lc)
+		out.am.append(pow(10.0, chi))
+		out.area.append(a)
+		out.mass.append(a / pow(10.0, chi))
+		out.dv.append(dv)
+	return out
+
+
+## Objects per km³ in spherical shells between radii edges (km), each orbit
+## (r, v, about a body of mu km³/s²) weighted by w and averaged over its period:
+## the fraction of time an ellipse spends inside radius R is M(E_R)/π, with
+## R = a(1 − e cos E_R) and M = E − e sin E (Kessler 1981, Icarus 48, 39).
+## Orbits that escape are left out.
+static func spatial_density(states: Array, w: PackedFloat64Array, edges: PackedFloat64Array, mu: float) -> PackedFloat64Array:
+	var out := PackedFloat64Array()
+	out.resize(edges.size() - 1)
+	out.fill(0.0)
+	for i in states.size():
+		var r: PackedFloat64Array = states[i][0]
+		var v: PackedFloat64Array = states[i][1]
+		var rn := V.norm(r)
+		var a := 1.0 / (2.0 / rn - V.dot(v, v) / mu)
+		if a <= 0.0:
+			continue
+		var h := V.cross(r, v)
+		var e := sqrt(maxf(0.0, 1.0 - V.dot(h, h) / (mu * a)))
+		var below := func(R: float) -> float:
+			if e < 1e-12:
+				return 1.0 if R >= a else 0.0
+			var c := clampf((1.0 - R / a) / e, -1.0, 1.0)
+			var E := acos(c)
+			return (E - e * sin(E)) / PI
+		for j in out.size():
+			out[j] += w[i] * (below.call(edges[j + 1]) - below.call(edges[j]))
+	for j in out.size():
+		out[j] /= 4.0 / 3.0 * PI * (pow(edges[j + 1], 3.0) - pow(edges[j], 3.0))
+	return out
 
 
 ## A debris cloud about (r, v): {r, v, t, n, M, cat, of, frags: [{r, v, dv}]}.

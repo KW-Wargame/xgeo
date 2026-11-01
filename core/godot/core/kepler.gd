@@ -1,7 +1,9 @@
 ## Two-body motion with universal variables, after Curtis (2020) Algorithms
 ## 3.3 and 3.4 and Bate, Mueller & White (1971); corroborated by Weber,
-## Orbital Mechanics & Astrodynamics (open text), Eqs. 251–255, 267. A line-for-line port of
-## src/engine/kepler.js; tests/run_tests.gd checks it against that engine.
+## Orbital Mechanics & Astrodynamics (open text), Eqs. 251–255, 267. A port of
+## src/engine/kepler.js (tests/run_tests.gd checks it against that engine);
+## both solve propagate's equation by safeguarded Newton, as plain Newton can
+## run away on long coasts of fast paths (tests/kepler_test.gd).
 ## Kept as the exact reference the n-body integrator (gravity.gd) is tested on.
 class_name Kepler
 
@@ -62,15 +64,51 @@ static func propagate(r0: PackedFloat64Array, v0: PackedFloat64Array, dt: float,
 		var q := (-2.0 * mu * alpha * dt) / (V.dot(r0, v0) + signf(dt) * sqrt(-mu * a) * (1.0 - r0n * alpha))
 		if q > 0.0:
 			chi = signf(dt) * sqrt(-a) * log(q)
-	for i in 100:
-		var z := alpha * chi * chi
-		var C := stumpff_c(z)
-		var S := stumpff_s(z)
-		var F := (r0n * vr0 / sqmu) * chi * chi * C + (1.0 - alpha * r0n) * chi * chi * chi * S + r0n * chi - sqmu * dt
-		var dF := (r0n * vr0 / sqmu) * chi * (1.0 - z * S) + (1.0 - alpha * r0n) * chi * chi * C + r0n
-		var step := F / dF
-		chi -= step
-		if absf(step) < 1e-9 * maxf(1.0, absf(chi)):
+	# Kepler's equation in χ, F(χ) = 0. F rises with χ everywhere (dF/dχ = r > 0),
+	# so the root is bracketed: from χ = 0 (F = −√μ·Δt) out, doubling, until F
+	# changes sign. Newton's step is taken when it stays inside the bracket,
+	# else the bracket is halved (safeguarded Newton: Press et al. 2007, §9.4,
+	# "rtsafe"). Plain Newton from the start guess can run away on a long
+	# coast of a fast open (or near-parabolic) path: thousands of km off, or
+	# off to infinity.
+	var kf := func(x: float) -> Array:
+		var zz := alpha * x * x
+		var Cx := stumpff_c(zz)
+		var Sx := stumpff_s(zz)
+		var Fx := (r0n * vr0 / sqmu) * x * x * Cx + (1.0 - alpha * r0n) * x * x * x * Sx + r0n * x - sqmu * dt
+		var dFx := (r0n * vr0 / sqmu) * x * (1.0 - zz * Sx) + (1.0 - alpha * r0n) * x * x * Cx + r0n
+		return [Fx, dFx]
+	var sg := signf(dt)
+	var lo := 0.0 # F(lo)·sg < 0
+	var hi := chi if chi * sg > 0.0 and is_finite(chi) else sg * sqmu * absf(dt) / r0n
+	for _i in 200:
+		var fh: float = kf.call(hi)[0]
+		if not (fh * sg < 0.0): # past the root (an overflow, inf or nan, counts as past)
+			break
+		lo = hi
+		hi *= 2.0
+	if hi < lo:
+		var k := lo
+		lo = hi
+		hi = k
+	if not (chi > lo and chi < hi):
+		chi = (lo + hi) / 2.0
+	for i in 200:
+		var ff: Array = kf.call(chi)
+		var F: float = ff[0]
+		var dF: float = ff[1]
+		if F < 0.0:
+			lo = chi
+		elif F > 0.0:
+			hi = chi
+		else:
+			break
+		var nx := chi - F / dF
+		if not (nx > lo and nx < hi): # Newton would leave the bracket: halve it instead
+			nx = (lo + hi) / 2.0
+		var step := absf(nx - chi)
+		chi = nx
+		if step < 1e-9 * maxf(1.0, absf(chi)) or hi - lo < 1e-12 * maxf(1.0, absf(chi)):
 			break
 	var z := alpha * chi * chi
 	var C := stumpff_c(z)

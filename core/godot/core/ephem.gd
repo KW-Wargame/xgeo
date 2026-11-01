@@ -112,6 +112,46 @@ static func centuries(utc_ms: float) -> float:
 	return (jd(utc_ms) - JD_J2000) / 36525.0
 
 
+## The Earth's body-fixed axes (ITRF) in the ICRF at UTC ms: the columns of
+## P^T · R3(GMST)^T, with IAU 1976 precession P (Lieske et al. 1977) and IAU
+## 1982 mean sidereal time (Vallado 2013, Algorithms 15 and 23; eq. 3-47).
+## Nutation (under 20") and polar motion (under 0.5") are left out, and UT1
+## is taken as UTC (under 1 s, 0.004°): the Earth's map sits within about a
+## kilometre of where it is. Pro turns it by IERS 2010 instead.
+static func earth_fixed(utc_ms: float) -> Basis:
+	var T := centuries(utc_ms)
+	var as_ := PI / 648000.0
+	var zeta := (2306.2181 * T + 0.30188 * T * T + 0.017998 * T * T * T) * as_
+	var zz := (2306.2181 * T + 1.09468 * T * T + 0.018203 * T * T * T) * as_
+	var th := (2004.3109 * T - 0.42665 * T * T - 0.041833 * T * T * T) * as_
+	var sec := 67310.54841 + (876600.0 * 3600.0 + 8640184.812866) * T + 0.093104 * T * T - 6.2e-6 * T * T * T
+	var gmst := fposmod(sec, 86400.0) / 86400.0 * TAU
+	# Frame rotations as rows (R3(a): [[c, s, 0], [-s, c, 0], [0, 0, 1]]).
+	var P := _mul(_r3(-zz), _mul(_r2(th), _r3(-zeta))) # J2000 to mean of date
+	var M := _mul(_t(P), _t(_r3(gmst))) # Earth-fixed to J2000
+	return Basis(Vector3(M[0][0], M[1][0], M[2][0]), Vector3(M[0][1], M[1][1], M[2][1]), Vector3(M[0][2], M[1][2], M[2][2]))
+
+
+static func _r3(a: float) -> Array:
+	return [[cos(a), sin(a), 0.0], [-sin(a), cos(a), 0.0], [0.0, 0.0, 1.0]]
+
+
+static func _r2(a: float) -> Array:
+	return [[cos(a), 0.0, -sin(a)], [0.0, 1.0, 0.0], [sin(a), 0.0, cos(a)]]
+
+
+static func _t(A: Array) -> Array:
+	return [[A[0][0], A[1][0], A[2][0]], [A[0][1], A[1][1], A[2][1]], [A[0][2], A[1][2], A[2][2]]]
+
+
+static func _mul(A: Array, B: Array) -> Array:
+	var C := [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+	for i in 3:
+		for j in 3:
+			C[i][j] = A[i][0] * B[0][j] + A[i][1] * B[1][j] + A[i][2] * B[2][j]
+	return C
+
+
 ## Heliocentric position (km) on the ICRF equator, from one element set,
 ## with Table 2b's terms if given.
 static func helio(el: Array, T: float, extra: Array = []) -> Vector3:
@@ -191,6 +231,35 @@ static func exact(body: String, utc_ms: float) -> PackedFloat64Array:
 ## Jupiter → Sun (km), in the game frame (z is out of the game's plane).
 static func sun(utc_ms: float) -> PackedFloat64Array:
 	return exact("sun", utc_ms)
+
+
+## The Moon from the Earth's centre (km), game frame: Montenbruck & Gill's
+## low-precision series (2000, Satellite Orbits, §3.3.2, Eqs. 3.47–3.48;
+## after Brown's theory), ecliptic and equinox of J2000 turned to the ICRF by
+## the obliquity. Good to a few arcminutes and about 500 km: what a third-body
+## pull needs (its tide at 7,000 km from the Earth is under 1.2e-9 km/s²).
+const GM_MOON := 4902.800118 # km³/s², DE440
+static func moon(utc_ms: float) -> PackedFloat64Array:
+	var T := centuries(utc_ms)
+	var d := PI / 180.0
+	var L0 := 218.31617 + 481267.88088 * T - 1.3972 * T
+	var l := (134.96292 + 477198.86753 * T) * d
+	var lp := (357.52543 + 35999.04944 * T) * d
+	var F := (93.27283 + 483202.01873 * T) * d
+	var D := (297.85027 + 445267.11135 * T) * d
+	var lam := L0 + (22640.0 * sin(l) + 769.0 * sin(2 * l) - 4586.0 * sin(l - 2 * D) + 2370.0 * sin(2 * D) - 668.0 * sin(lp) - 412.0 * sin(2 * F)
+		- 212.0 * sin(2 * l - 2 * D) - 206.0 * sin(l + lp - 2 * D) + 192.0 * sin(l + 2 * D) - 165.0 * sin(lp - 2 * D) + 148.0 * sin(l - lp)
+		- 125.0 * sin(D) - 110.0 * sin(l + lp) - 55.0 * sin(2 * F - 2 * D)) / 3600.0
+	var beta := (18520.0 * sin(F + (lam - L0) * d + (412.0 * sin(2 * F) + 541.0 * sin(lp)) / 3600.0 * d) - 526.0 * sin(F - 2 * D) + 44.0 * sin(l + F - 2 * D)
+		- 31.0 * sin(-l + F - 2 * D) - 25.0 * sin(-2 * l + F) - 23.0 * sin(lp + F - 2 * D) + 21.0 * sin(-l + F) + 11.0 * sin(-lp + F - 2 * D)) / 3600.0
+	var r := 385000.0 - 20905.0 * cos(l) - 3699.0 * cos(2 * D - l) - 2956.0 * cos(2 * D) - 570.0 * cos(2 * l) + 246.0 * cos(2 * l - 2 * D) - 205.0 * cos(lp - 2 * D) - 171.0 * cos(l + 2 * D) - 152.0 * cos(l + lp - 2 * D)
+	var la := lam * d
+	var be := beta * d
+	var x := r * cos(be) * cos(la)
+	var y := r * cos(be) * sin(la)
+	var z := r * sin(be)
+	var e := OBLIQUITY_DEG * d
+	return _to_game(PackedFloat64Array([x, y * cos(e) - z * sin(e), y * sin(e) + z * cos(e)]), T)
 
 
 ## Jupiter → Earth (km): the Earth–Moon barycentre, 0.0003° from Earth at 5 AU.

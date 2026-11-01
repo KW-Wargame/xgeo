@@ -17,8 +17,8 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	Sim.campaign_path = "res://data/campaign.json"
-	var sim := Sim.new()
+	Sim.campaign_path = "res://tests/fixtures/jupiter_shadow.json"
+	var sim := Sim.new("res://data/game.json", "res://tests/fixtures/jupiter_shadow.json")
 	while sim.t < 6.0 * 3600.0:
 		sim.advance(Sim.LOOK)
 	_samples(sim)

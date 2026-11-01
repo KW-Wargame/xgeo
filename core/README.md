@@ -30,9 +30,10 @@ picks the scenario, `--seed=N` the random seed and `--run=K` the run of it
 Monte Carlo set), `--coa=orders.json` gives Blue's orders at set times (burn,
 intercept, effect, buoy; see `docs/SCENARIOS.md`), `--truth=true` adds Red's and
 neutrals' true states. A relative `--out` path is relative to the `godot/`
-folder (Godot starts there), so `run.jsonl` above lands in `godot/run.jsonl`. With no scenario file
+folder (Godot starts there), so `run.jsonl` above lands in `godot/run.jsonl`.
+With no scenario file
 (`--scenario=`) it runs on `game.json` alone: the classes, the equipment and
-the opening positions. Units are km, km/s and s, Jupiter-centred.
+the opening positions. Units are km, km/s and s, centred on Jupiter.
 
 From GDScript the same thing is `var sim := Sim.new()` then
 `sim.advance(seconds)`, reading `sim.ships`, `sim.tracks` and `sim.log`; the
@@ -78,8 +79,8 @@ play, not physics; most values here are Notional)
 The data is JSON in `godot/data/`: `game.json` holds the classes and
 constants. A scenario is another JSON file, passed with `--scenario=`; two
 examples are in `godot/data/examples/`, and how to write one is in
-[docs/SCENARIOS.md](docs/SCENARIOS.md). A value in a data file
-is either cited (a `sources` entry) or marked as a design value.
+[docs/SCENARIOS.md](docs/SCENARIOS.md).
+A value in a data file is either cited (a `sources` entry) or marked as a design value.
 
 ## Test it
 
@@ -88,6 +89,8 @@ godot --headless --path godot --import
 godot --headless --path godot --script res://tests/run_tests.gd
 godot --headless --path godot --script res://tests/scenario_test.gd
 godot --headless --path godot --script res://tests/forecast_test.gd
+godot --headless --path godot --script res://tests/earth_test.gd
+godot --headless --path godot --script res://tests/track3d_test.gd
 node tools/check-core.mjs    # Core never reaches into the game
 node tools/verify.mjs        # every number against independent references (needs Python 3.12+)
 ```

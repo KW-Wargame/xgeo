@@ -71,12 +71,38 @@ def test_integrator_vs_dop853(game, check):
         t_eval = [x["t"] for x in s]
         sol = refs.integrate(np.array(s[0]["r"]), np.array(s[0]["v"]), c["t0"], c["dt"], mu, J2, R, moons, eo, c["j2"], c["moons"], t_eval=t_eval)
         err = max(np.linalg.norm(np.array(x["r"]) - sol.y[:3, k]) for k, x in enumerate(s))
-        key = c["max_h"]
-        if err > worst.get(key, (0, ""))[0]:
-            worst[key] = (err, c["name"])
-    for h, (err, where) in sorted(worst.items()):
-        check.bound(f"RK4 h={h:.0f} s, 1 day, J2 + moons (worst: {where})", err, 0.005, "scipy DOP853 (rtol 1e-13) on hapsira's force terms",
-                    unit="km", note="5 m: a tenth of the radar's 50 m range sigma, the finest measurement in the game")
+        if err > worst.get("err", 0.0):
+            worst = {"err": err, "name": c["name"]}
+    check.bound(f"Gravity.coast (DOP853, rtol 1e-12), 1 day, J2 + moons (worst: {worst['name']})", worst["err"], 1e-5, "scipy DOP853 (rtol 1e-13) on hapsira's force terms",
+                unit="km", note="1 cm, against a need of 5 m (a tenth of the radar's 50 m range sigma, the finest measurement in the game)")
+
+
+def test_transition_matrix(game, check):
+    """Gravity.coast_stm, the tracker's covariance under the full force model: its matrix
+    against central differences of whole reference coasts (no variational equations of
+    our own to share a mistake with), and its end state against the plain coast."""
+    mu, J2, R, moons, eo = _env(game)
+    worst, wend = 0.0, 0.0
+    steps = [1.0, 1.0, 1.0, 1e-4, 1e-4, 1e-4]
+    for c in game["gravity"]["stm"]:
+        x0, dt = np.array(c["r"] + c["v"]), c["dt"]
+        F = np.array(c["phi"])
+        end = refs.integrate(x0[:3], x0[3:], c["t0"], dt, mu, J2, R, moons, eo, t_eval=[c["t0"] + dt]).y[:, -1]
+        wend = max(wend, np.linalg.norm(np.array(c["r1"]) - end[:3]))
+        for j in range(6):
+            up, dn = x0.copy(), x0.copy()
+            up[j] += steps[j]
+            dn[j] -= steps[j]
+            a = refs.integrate(up[:3], up[3:], c["t0"], dt, mu, J2, R, moons, eo, t_eval=[c["t0"] + dt]).y[:, -1]
+            b = refs.integrate(dn[:3], dn[3:], c["t0"], dt, mu, J2, R, moons, eo, t_eval=[c["t0"] + dt]).y[:, -1]
+            col = (a - b) / (2 * steps[j])
+            scale = np.array([1, 1, 1, dt, dt, dt]) * (1.0 if j < 3 else 1.0 / dt)  # each block dimensionless by the coast's length
+            worst = max(worst, np.max(np.abs(F[:, j] - col) * scale))
+    n = len(game["gravity"]["stm"])
+    check.bound(f"Gravity.coast_stm end state, {n} ships over 6 h", wend, 1e-5, "scipy DOP853 (rtol 1e-13) on hapsira's force terms", unit="km")
+    check.bound(f"Gravity.coast_stm transition matrix, {n} ships over 6 h (one off the plane)", worst, 1e-5,
+                "central differences (1 km, 1e-4 km/s) of scipy DOP853 coasts on hapsira's J2 and third-body terms",
+                note="each block scaled by the coast's length to be dimensionless; differencing whole coasts is itself good to about 1e-6")
 
 
 def test_j2_secular_rates(game, check):
@@ -101,5 +127,5 @@ def test_j2_secular_rates(game, check):
     check.rel("nodal regression rate", fO, dO, 0.01, ref, note=f"{math.degrees(dO) * 86400 * 20:.1f} deg over 20 days; residual is J2^2 and short-period terms")
     check.rel("apsidal advance rate", fw, dw, 0.01, ref, note=f"{math.degrees(dw) * 86400 * 20:.1f} deg over 20 days")
     sol = refs.integrate(np.array(c["samples"][0]["r"]), np.array(c["samples"][0]["v"]), 0.0, c["dt"], mu, J2, R, moons, eo, True, False, t_eval=[c["dt"]])
-    check.bound("20-day J2 arc vs DOP853 (h = 30 s)", np.linalg.norm(np.array(c["samples"][-1]["r"]) - sol.y[:3, -1]), 0.05, "scipy DOP853 rtol 1e-13",
+    check.bound("20-day J2 arc, Gravity.coast vs scipy DOP853", np.linalg.norm(np.array(c["samples"][-1]["r"]) - sol.y[:3, -1]), 0.001, "scipy DOP853 rtol 1e-13",
                 unit="km", note="a 0.58-day orbit at 3 Jupiter radii, 34 revolutions")

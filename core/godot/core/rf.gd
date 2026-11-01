@@ -127,3 +127,72 @@ static func q_inv(p: float) -> float:
 static func detect_pd(snr: float, pfa: float, n := 0.0) -> float:
 	var s := snr / sqrt(n) if n > 0.0 else 0.0
 	return q((q_inv(pfa) - snr) / sqrt(1.0 + 2.0 * s))
+
+
+## ln k! (exact sum below 20, Stirling's series above: error under 1e-14).
+static func log_fact(k: int) -> float:
+	if k < 20:
+		var s := 0.0
+		for i in range(2, k + 1):
+			s += log(float(i))
+		return s
+	var x := float(k + 1)
+	return (x - 0.5) * log(x) - x + 0.5 * log(TAU) + 1.0 / (12.0 * x) - 1.0 / (360.0 * pow(x, 3.0)) + 1.0 / (1260.0 * pow(x, 5.0))
+
+
+## Q(n, T) = e^-T Σ_{j<n} T^j/j!: the chance n pulses of noise alone, square-law
+## detected and summed (in units of the noise power), pass T.
+static func _noise_q(n: int, T: float) -> float:
+	var s := 0.0
+	for j in n:
+		s += exp(-T + (float(j) * log(T) if j > 0 else 0.0) - log_fact(j))
+	return s
+
+
+## The threshold T (noise powers, summed over n pulses) for a false-alarm rate pfa.
+static func radar_threshold(pfa: float, n := 1) -> float:
+	var lo := 0.0
+	var hi := float(n) + 20.0 * sqrt(float(n)) + 80.0
+	for i in 100:
+		var m := 0.5 * (lo + hi)
+		if _noise_q(n, m) > pfa:
+			lo = m
+		else:
+			hi = m
+	return 0.5 * (lo + hi)
+
+
+## Probability a radar detects a target of mean per-pulse SNR snr in n pulses
+## integrated noncoherently (square law) at false-alarm rate pfa, for Swerling's
+## target cases (Swerling 1960, IRE Trans. IT-6; Marcum 1960): 0, a steady
+## echo; 1 and 3, an echo that fluctuates from scan to scan (Rayleigh, and one
+## dominant scatterer: χ² with 2 and 4 degrees of freedom); 2 and 4, the same
+## from pulse to pulse. Given the echo energy, the sum is noncentral χ², a
+## Poisson mixture of central ones: Pd = Σ_k w_k Q(n + k, T). A steady echo
+## gives Poisson weights of mean E = n·snr; the fluctuating cases make E itself
+## Gamma-distributed with shape m (1, n, 2, 2n for cases 1 to 4: independent
+## pulses add their shapes), which turns the weights negative binomial,
+## w_k = C(k+m-1, k) p^m (1-p)^k with p = m/(m + E). Exact, to 1e-12.
+static func radar_pd(snr: float, pfa: float, n := 1, swerling := 0) -> float:
+	var T := radar_threshold(pfa, n)
+	var E := float(n) * maxf(snr, 0.0)
+	var m: int = [0, 1, n, 2, 2 * n][clampi(swerling, 0, 4)]
+	var lp := log(float(m) / (float(m) + E)) if m > 0 else 0.0
+	var lq := log(E / (float(m) + E)) if m > 0 and E > 0.0 else -INF
+	# miss = Σ w_k P(n + k, T), with P = 1 − Q falling as k grows.
+	var P := 1.0 - _noise_q(n, T)
+	var miss := 0.0
+	var k := 0
+	while k < 2000000:
+		var lw: float
+		if m == 0:
+			lw = -E + (float(k) * log(E) if k > 0 else 0.0) - log_fact(k)
+		else:
+			lw = log_fact(k + m - 1) - log_fact(k) - log_fact(m - 1) + float(m) * lp + (float(k) * lq if k > 0 else 0.0)
+		miss += exp(lw) * P
+		var term := exp(-T + float(n + k) * log(T) - log_fact(n + k))
+		if P < 1e-17 or (float(n + k) > T + 1.0 and term < 1e-18): # past the peak, P is rounding alone
+			break
+		P = maxf(0.0, P - term)
+		k += 1
+	return clampf(1.0 - miss, 0.0, 1.0)

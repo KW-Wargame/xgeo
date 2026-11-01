@@ -1,8 +1,8 @@
 # xGEO
 
-![Above Jupiter's dayside, a dark inspector hangs just beneath ORIEL-36, an allied radar satellite.](images/site/hero-1280.jpg)
+![Over the Earth's limb, the inspector WATCHMAN-1 closes in, with ICEYE-X36 and Cosmos 2612 beyond it.](images/site/hero-1280.jpg)
 
-A hard-science game of stealth satellites and electronic warfare around Jupiter, built on real orbital mechanics and sensor physics. Everything is on the website: **https://kw-wargame.github.io/xgeo/**
+A hard-science game of satellites, sensors and signals in low Earth orbit, built on real orbital mechanics, sensor physics and real satellites. Everything is on the website: **https://kw-wargame.github.io/xgeo/**
 
 | | |
 |---|---|

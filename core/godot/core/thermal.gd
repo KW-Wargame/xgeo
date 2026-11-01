@@ -170,14 +170,14 @@ func sunlight(r: PackedFloat64Array, at := NAN) -> float:
 	var tt: float = sim.t if is_nan(at) else at
 	var ms := sim.utc_ms(tt)
 	# The bodies that could stand in the way: [centre, equatorial, polar radius].
-	var bodies := [[V.of(0, 0, 0), float(sim.data.jupiter.radius), Ephem.BODY.jupiter.rp]]
+	var bodies := [[V.of(0, 0, 0), sim.central_radius(), sim.central_polar()]]
 	for m in sim.moons:
 		bodies.append([sim.moon_state(m.id, tt)[0], float(m.radius), float(m.radius)])
 	if V.norm(r) > Gravity.FAR:
 		for b in Ephem.PLANETS:
 			if b != "jupiter":
 				bodies.append([Ephem.pos(b, ms), float(Ephem.BODY[b].re), float(Ephem.BODY[b].rp)])
-	return lit_share(r, Ephem.pos("sun", ms), bodies)
+	return lit_share(r, sim.sun_pos(tt), bodies)
 
 
 ## The geometry alone: the limb-darkened share of a Sun at sun (km) seen from

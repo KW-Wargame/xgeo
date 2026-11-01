@@ -48,6 +48,17 @@ func _init() -> void:
 			check("lambert none", sol.is_empty())
 		else:
 			check("lambert tof=%s" % c.tof, not sol.is_empty() and vrel(sol[0], c.out.v1) < 1e-8 and vrel(sol[1], c.out.v2) < 1e-8)
+	# Every branch Izzo's method gives, single and multi-revolution, flown by the two-body propagator, arrives where it was aimed.
+	var lr1 := V.of(1.2e6, -3.0e5, 2.0e4)
+	var lr2 := V.of(-4.0e5, 1.5e6, -6.0e4)
+	var lp := 2.0 * PI * sqrt(pow(1.4e6, 3) / mu)
+	var all := Lambert.solve_all(lr1, lr2, 3.6 * lp, mu, true, 5)
+	var worst := 0.0
+	for tr in all:
+		worst = maxf(worst, V.dist(Kepler.propagate(lr1, tr.v1, 3.6 * lp, mu)[0], lr2))
+	check("lambert: %d transfers (single and multi-revolution) arrive where aimed" % all.size(), all.size() >= 5 and worst < 1e-3, "%d, %.6f km" % [all.size(), worst])
+	var retro := Lambert.solve(lr1, lr2, 0.4 * lp, mu, false)
+	check("lambert: a retrograde transfer arrives where aimed", not retro.is_empty() and V.dist(Kepler.propagate(lr1, retro[0], 0.4 * lp, mu)[0], lr2) < 1e-3)
 	for c in fx.rf.stumpff:
 		check("stumpff z=%s" % c.z, rel(Kepler.stumpff_c(c.z), c.C) < 1e-12 and rel(Kepler.stumpff_s(c.z), c.S) < 1e-12)
 	for c in fx.rf.dishGain:
@@ -74,7 +85,7 @@ func _init() -> void:
 	var hy: Dictionary = sim.ship("hydra")
 	var exact := Kepler.propagate(hy.r, hy.v, 86400.0, mu)
 	var num := g.coast(hy.r, hy.v, 0.0, 86400.0, 60.0)
-	check("RK4 = Kepler over a day", V.dist(num[0], exact[0]) < 0.01, "%f km" % V.dist(num[0], exact[0]))
+	check("coast = Kepler over a day", V.dist(num[0], exact[0]) < 0.01, "%f km" % V.dist(num[0], exact[0]))
 	var e0 := Kepler.energy(hy.r, hy.v, mu)
 	check("energy kept", rel(Kepler.energy(num[0], num[1], mu), e0) < 1e-10)
 
@@ -104,6 +115,45 @@ func _init() -> void:
 	var gap := V.dist(with_moons[0], without[0])
 	check("moons perturb HYDRA over a week", gap > 100.0, "%f km" % gap)
 	print("moons move HYDRA %.0f km in a week" % gap)
+
+	# --- the gradient of the full force model (J2, moons, Sun) against central
+	# differences of accel, off the plane so J2's z terms count; then the
+	# transition matrix flown with the orbit against differences of whole coasts ---
+	var gf: Gravity = sim.gravity
+	var gr := V.of(hy.r[0], hy.r[1], 4.0e4)
+	var gd := gf.gradient(gr, 3600.0)
+	var gworst := 0.0
+	for j in 3:
+		var up := gr.duplicate()
+		var dn := gr.duplicate()
+		up[j] += 1.0
+		dn[j] -= 1.0
+		var col := V.scale(V.sub(gf.accel(up, 3600.0), gf.accel(dn, 3600.0)), 0.5)
+		for i in 3:
+			gworst = maxf(gworst, absf(gd[i][j] - col[i]) / absf(gd[0][0]))
+	check("gravity gradient = differences of accel", gworst < 1e-7, str(gworst))
+	var sdt := 6.0 * 3600.0
+	var sv: PackedFloat64Array = hy.v.duplicate()
+	var sm := gf.coast_stm(hy.r, sv, 0.0, sdt)
+	var plain := gf.coast(hy.r, sv, 0.0, sdt)
+	check("coast_stm flies the plain coast", V.dist(sm[0], plain[0]) == 0.0 and V.dist(sm[1], plain[1]) == 0.0)
+	var sworst := 0.0
+	var steps := [1.0, 1.0, 1.0, 1e-4, 1e-4, 1e-4]
+	for j in 6:
+		var s_up: PackedFloat64Array = hy.r.duplicate()
+		s_up.append_array(sv)
+		var s_dn := s_up.duplicate()
+		s_up[j] += steps[j]
+		s_dn[j] -= steps[j]
+		var ca: Array = gf.coast(s_up.slice(0, 3), s_up.slice(3), 0.0, sdt)
+		var cb: Array = gf.coast(s_dn.slice(0, 3), s_dn.slice(3), 0.0, sdt)
+		var col := V.scale(V.sub(ca[0], cb[0]), 0.5 / steps[j])
+		col.append_array(V.scale(V.sub(ca[1], cb[1]), 0.5 / steps[j]))
+		for i in 6:
+			var sc := 1.0 if i < 3 else sdt # each block made dimensionless by the coast's length
+			sworst = maxf(sworst, absf(sm[2][i][j] - col[i]) * sc * (1.0 if j < 3 else 1.0 / sdt))
+	check("transition matrix = differences of whole coasts", sworst < 1e-5, str(sworst))
+	print("gravity gradient off differences by ", gworst, "; transition matrix by ", sworst, " (scaled)")
 
 	# --- hearing: GAN STN hears a report out to the engine's range ---
 	# (Red's reporting habit is the scenario's: Core alone, with no scenario file, has none to hear.)

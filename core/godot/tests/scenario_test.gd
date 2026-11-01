@@ -25,6 +25,10 @@
 ## 12. Real time: a sim second is a second of UTC; a ship turns at its real
 ##    orbital rate with J2 and Io at its real period. A scenario may compress
 ##    its story, never the clock or the physics.
+## 13. A world's central body: Jupiter unless the world says otherwise (the
+##    frame's origin, so the Sun is where ephem.gd puts it); a world about
+##    Earth has Earth at its origin and Jupiter where the ephemeris puts it
+##    from Earth. Sim.make() makes a plain world unless a layer sets a maker.
 ## Thresholds are design values for a test, chosen with margin over what the
 ## models give; each is stated where it is checked.
 extends SceneTree
@@ -396,6 +400,20 @@ func _init() -> void:
 	kv = {}
 	kv2 = {}
 	_check(wr.get_ref() == null, "a finished world is freed")
+
+	# 13. The central body.
+	var cw := _world()
+	var cms := cw.utc_ms()
+	_check(cw.central == "jupiter" and V.norm(cw.body_pos("jupiter")) == 0.0 and V.norm(V.sub(cw.body_pos("sun"), Ephem.pos("sun", cms))) == 0.0,
+			"a world is about Jupiter unless it says otherwise: the Sun where ephem.gd puts it")
+	cw.central = "earth"
+	var cj := cw.body_pos("jupiter")
+	var cwant := V.scale(Ephem.pos("earth", cms), -1.0)
+	_check(V.norm(cw.body_pos("earth")) == 0.0 and V.norm(V.sub(cj, cwant)) < 1e-6 * V.norm(cwant),
+			"a world about Earth: Earth at its origin, Jupiter %.3f AU from it" % (V.norm(cj) / Ephem.AU_KM))
+	_check(cw.central_radius() == float(Ephem.BODY.earth.re), "a world about Earth: its central radius is Earth's")
+	_check(Sim.make() is Sim and not Sim.maker.is_valid(), "Sim.make() makes a plain world with no maker set")
+	cw = null
 
 	print("%d failed" % fails)
 	quit(1 if fails > 0 else 0)

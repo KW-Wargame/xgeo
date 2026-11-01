@@ -40,6 +40,12 @@ static func dist(a: PackedFloat64Array, b: PackedFloat64Array) -> float:
 	return norm(sub(a, b))
 
 
+## A game-frame vector (a velocity, a direction) as the same vector in Godot's
+## y-up world, unscaled.
+static func dir(a: PackedFloat64Array) -> Vector3:
+	return Vector3(a[0], a[2], -a[1])
+
+
 ## Game plane (x, y; z up out of the plane) to Godot's y-up world, in render units.
 static func to_world(r: PackedFloat64Array, origin: PackedFloat64Array, unit_km: float) -> Vector3:
 	return Vector3((r[0] - origin[0]) / unit_km, (r[2] - origin[2]) / unit_km, -(r[1] - origin[1]) / unit_km)

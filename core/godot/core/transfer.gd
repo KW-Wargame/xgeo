@@ -7,12 +7,12 @@
 ## - the excess speed it needs, v∞ = v₁ − v_planet, is then flown out of the
 ##   planet's pull on an escape hyperbola that passes through the ship's
 ##   position now and leaves along v∞ (departure());
-## - on arrival, stopping in a circular orbit 1.5 radii up costs
-##   √(v∞² + 2μ/r) − √(μ/r) (Curtis 2020, Eq. 8.59), and the aim point is
-##   offset by the B-plane distance b = r_p·√(1 + 2μ/(r_p·v∞²)) so the
-##   ship passes the planet at r_p instead of hitting its centre (Eq. 8.53;
-##   both as in Weber, Orbital Mechanics & Astrodynamics, open text, "Planetary
-##   arrival").
+## - on arrival, stopping in the orbit asked for (by default circular, 1.5
+##   radii up) costs √(v∞² + 2μ/r_p) − v_p (Curtis 2020, Eq. 8.59), and the
+##   aim point is offset by the B-plane distance b = r_p·√(1 + 2μ/(r_p·v∞²))
+##   so the ship passes the planet at r_p instead of hitting its centre, on
+##   the side that gives the tilt asked for (Eq. 8.53; Weber, Orbital
+##   Mechanics & Astrodynamics, open text, "Planetary arrival"; arrival.gd).
 ## The burn actually flown is then corrected under the game's full gravity
 ## (Sun, planets, Jupiter and its moons; gravity.gd): coast the trial, take the
 ## miss at arrival, and correct v∞ by Newton's method, starting from the
@@ -86,7 +86,7 @@ static func departure(r: PackedFloat64Array, vinf: PackedFloat64Array, mu: float
 ## The heliocentric leg and the burn for it, from state (r, v) relative to the
 ## body `from` at UTC ms0, to planet `to` after tof seconds. The cheaper of the
 ## two departures. {} if no transfer.
-static func patched(r: PackedFloat64Array, v: PackedFloat64Array, from: String, to: String, ms0: float, tof: float) -> Dictionary:
+static func patched(r: PackedFloat64Array, v: PackedFloat64Array, from: String, to: String, ms0: float, tof: float, arr := {}) -> Dictionary:
 	var sun0: Array = Ephem.state("sun", ms0)
 	var P0: Array = _planet(from, ms0)
 	# Heliocentric: planet relative to the Sun (game frame is Jupiter-centred).
@@ -109,22 +109,30 @@ static func patched(r: PackedFloat64Array, v: PackedFloat64Array, from: String, 
 	if best.is_empty():
 		return {}
 	var vinf2 := V.sub(sol[1], V.sub(P1[1], sun1[1]))
-	var v2n := V.norm(vinf2)
-	var mu2 := Ephem.gm(to)
-	var rp := CAPTURE_R * float(Ephem.BODY[to].re)
 	best.vinf = vinf
 	best.vinf_arr = vinf2
-	best.capture = sqrt(v2n * v2n + 2.0 * mu2 / rp) - sqrt(mu2 / rp)
+	var a := arrive(to, vinf2, ms1, arr)
+	best.capture = a.capture
+	best.tilt = a.tilt
 	best.total = float(best.dv) + float(best.capture)
-	# Aim: the planet, offset in the plane by the B-plane distance for a pass at rp.
-	var b := rp * sqrt(1.0 + 2.0 * mu2 / (rp * v2n * v2n))
-	var side := V.cross(V.of(0, 0, 1), vinf2)
-	side = V.scale(side, 1.0 / maxf(1e-9, V.norm(side)))
-	best.aim_off = V.scale(side, b)
+	# Aim: the planet, offset in the B-plane for a pass at the low point asked for.
+	best.aim_off = a.aim
 	best.R1 = R1
 	best.V1 = V1
 	best.R2 = V.add(R2, best.aim_off)
 	return best
+
+
+## Arriving at planet `to` with excess velocity vinf2 at ms, into the orbit
+## arr asks for (Arrival.radii; {} is CAPTURE_R radii, circular, least tilt):
+## {capture (km/s), aim (B-plane offset, km), tilt (rad)}.
+static func arrive(to: String, vinf2: PackedFloat64Array, ms: float, arr := {}) -> Dictionary:
+	var A := Arrival.radii(to, arr)
+	var mu2 := Ephem.gm(to)
+	var vn := maxf(V.norm(vinf2), 1e-9)
+	var s := V.scale(vinf2, 1.0 / vn)
+	var pl := Arrival.plane(s, Arrival.pole(to, ms), A.i)
+	return {"capture": Arrival.capture_dv(vn, mu2, A.rp, A.ra), "aim": Arrival.aim(s, pl[0], vn, mu2, A.rp), "tilt": pl[1]}
 
 
 ## The Jacobian of the two-body arc about the Sun (arrival position per km/s

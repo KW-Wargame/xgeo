@@ -170,7 +170,7 @@ static func compute(sim: Sim, ship_id: String, horizon_s := -1.0, n := SAMPLES, 
 	var C := Thermal.heat_capacity(s)
 	var T := sim.thermal.skin_now(s)
 	var flash := float(s.get("flash_until", -1.0))
-	var RJ := float(sim.data.jupiter.radius)
+	var RJ := sim.central_radius()
 	var disc := float(sim.data.cfg.ir.band.discFactor)
 	var glare := float(sim.data.cfg.ir.band.glareFactor)
 	var cone := float(sim.data.cfg.ir.glareCone)
@@ -200,6 +200,7 @@ static func compute(sim: Sim, ship_id: String, horizon_s := -1.0, n := SAMPLES, 
 	var samples := []
 	var f_prev := -1.0
 	var partial := false
+	var ahead := {}
 	for i in times.size():
 		var at: float = times[i]
 		if i > 1 and budget >= 0 and not path.has(at):
@@ -215,7 +216,17 @@ static func compute(sim: Sim, ship_id: String, horizon_s := -1.0, n := SAMPLES, 
 		else:
 			if not path.has(at):
 				if i > 1:
-					st = sim.gravity.coast(st[0], st[1], float(times[i - 1]), dt, 300.0)
+					if not ahead.has(at):
+						# One integration over the run of grid points still to fill.
+						var want := []
+						for j in range(i, times.size() if budget < 0 else mini(times.size(), i + budget + 1)):
+							if path.has(times[j]):
+								break
+							want.append(times[j])
+						var got := sim.gravity.coast_to(st[0], st[1], float(times[i - 1]), want)
+						for j in want.size():
+							ahead[want[j]] = got[j]
+					st = ahead[at]
 				path[at] = [st[0], st[1], sim.thermal.sunlight(st[0], at)]
 			else:
 				st = [path[at][0], path[at][1]]
@@ -310,7 +321,7 @@ static func _track_pos(e: Dictionary, at: float, memo: Dictionary) -> PackedFloa
 	var out: PackedFloat64Array
 	if el.is_empty():
 		var x: PackedFloat64Array = Track.coast(e.x, dt)
-		out = V.of(x[0], x[1])
+		out = V.of(x[0], x[1], x[2]) if x.size() == 6 else V.of(x[0], x[1])
 	else:
 		var ec := float(el.e)
 		var M := float(el.M0) + float(el.n) * dt
@@ -328,10 +339,12 @@ static func _track_pos(e: Dictionary, at: float, memo: Dictionary) -> PackedFloa
 	return out
 
 
-## Planar Kepler elements of a track state [x, y, vx, vy] about Jupiter
-## (Track.MU): {a, e, w, M0, n, dir}; {} if not a bound ellipse.
+## Planar Kepler elements of a track state [x, y, vx, vy] about the world's
+## centre (Track.mu(): Jupiter's in the campaign): {a, e, w, M0, n, dir}; {} if not a bound ellipse.
 static func _elements(x: PackedFloat64Array) -> Dictionary:
-	var mu := Track.MU
+	if x.size() != 4:
+		return {} # a 3-D track ([x, y, z, vx, vy, vz]) coasts by Track.coast
+	var mu := Track.mu()
 	var r := sqrt(x[0] * x[0] + x[1] * x[1])
 	var v2 := x[2] * x[2] + x[3] * x[3]
 	var E := v2 / 2.0 - mu / r
@@ -391,12 +404,12 @@ static func _derive(sim: Sim, f: Dictionary) -> void:
 		var want_enter := fb < 0.5
 		if (want_enter and sh.enter < 0.0) or (not want_enter and sh.exit < 0.0):
 			var ms := sim.utc_ms(float(a.t))
-			var sun := Ephem.pos("sun", ms)
+			var sun := sim.sun_pos(float(a.t))
 			for it in 10:
 				var m := (lo + hi) / 2.0
 				var rm := V.add(a.r, V.scale(V.sub(b.r, a.r), m))
 				var d := V.sub(sun, rm)
-				var hid := Thermal._ray_hits(rm, V.scale(d, 1.0 / V.norm(d)), float(sim.data.jupiter.radius), float(Ephem.BODY.jupiter.rp))
+				var hid := Thermal._ray_hits(rm, V.scale(d, 1.0 / V.norm(d)), sim.central_radius(), sim.central_polar())
 				if hid == (fa < 0.5):
 					lo = m
 				else:

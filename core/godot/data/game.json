@@ -977,7 +977,17 @@
  },
  "scenario": {
   "seed": 4417,
-  "hostileArrival": 172800,
+  "view": {
+   "actor": "hydra",
+   "focus": "hydra",
+   "select": "h1"
+  },
+  "opening": {
+   "cue": [
+    "A drive flared near the freighter lane hours ago: TRK 4417.",
+    "TRK 4417: initiated on observed burn."
+   ]
+  },
   "ships": [
    {
     "id": "mv",
@@ -1090,7 +1100,8 @@
     ],
     "t0": 0,
     "dry": 20,
-    "prop": 40
+    "prop": 40,
+    "opening_track": "TRK 4417"
    },
    {
     "id": "n1",
@@ -1112,7 +1123,8 @@
      7.995378543412751,
      0
     ],
-    "t0": 0
+    "t0": 0,
+    "beacon_track": "TRK 4420"
    }
   ]
  }

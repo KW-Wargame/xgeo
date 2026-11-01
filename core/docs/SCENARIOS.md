@@ -38,9 +38,9 @@ the loader). The labels are defined in [FIDELITY.md](FIDELITY.md).
 | `days` | no | days of sim time | The run ends with result `time` when this much sim time has passed. Without it, only the objectives (or `--hours`) end it. |
 | `escalation` | if an objective is `peace` | | `war`: the escalation score (Notional) at which the `peace` objective fails. |
 | `opening` | no | | Blue's first track on the Red ship whose id is `h1`. See *The opening track*. |
-| `effects` | if anything uses an effect | | Settings for jamming, spoofing, dazzling, HPM, cyber, kinetic kills and radar (`effects.gd`). The CLI gives no orders, so a CLI run does not need them; xGEO Live and your own scripts that call `sim.effects` do. Copy the block from `examples/test_range.json`; CLOSE PASS (`godot/data/campaign.json`, in the full repository) carries the same values with notes giving each value's basis. |
+| `effects` | if anything uses an effect | | Settings for jamming, spoofing, dazzling, HPM, cyber, kinetic kills and radar (`effects.gd`). The CLI gives no orders, so a CLI run does not need them; xGEO Live and your own scripts that call `sim.effects` do. Copy the block from `examples/test_range.json`; the Jupiter test world (`godot/tests/fixtures/jupiter_shadow.json`, in the full repository) carries the same values with notes giving each value's basis. |
 | `civil` | no | | Neutral civil traffic, each one a radio emitter on a circular orbit. See *Civil traffic*. |
-| `pockets`, `red`, `blue_extra` | no | | Lagrange-point pockets and Red ships placed in them, and Blue buoys staged behind a moon. CLOSE PASS (`campaign.json`) has pockets; no current scenario uses `red` or `blue_extra` (they came from the retired NIGHT HERON); see *Pockets*. |
+| `pockets`, `red`, `blue_extra` | no | | Lagrange-point pockets and Red ships placed in them, and Blue buoys staged behind a moon. The Jupiter test world (`jupiter_shadow.json`) has pockets; no current scenario uses `red` or `blue_extra` (they came from the retired NIGHT HERON); see *Pockets*. |
 | `interplanetary` | no | true / false | Allow flights between planets (`transfer.gd`). Default false. |
 | `hulls` | no | | Hull drawings by class id, for xGEO Live only. Core gives a class with no hull an empty one. |
 | `name` | no | | Printed in the CLI's `start` line. |
@@ -138,15 +138,12 @@ its handler for 3 hours within 200 km of its target with a Blue ship within
 leg would cost more than 1/2.2 (about 45%) of its remaining Δv, it ends the
 inspection there.
 
-A Red ship with no `role` only reports home on its `ttc` schedule. The roles
-`tender`, `relay`, `inspector` and `sleeper` are written for the shelved
-scenario's ship ids (`h1`, `r1`, `r2`, `r3`, `excal`, `hydra`, `mv`) and are
-not general-purpose.
+A Red ship with no `role` only reports home on its `ttc` schedule.
 
 ## The opening track
 
-If a Red ship has the id `h1`, Blue starts with a track on it, labelled
-TRK 4417, drawn from its true state with this much error:
+A ship with `"opening_track": "<label>"` starts with a track under that label
+(TRK 4417 in the examples), drawn from its true state with this much error:
 
 | Key | Default | Units | Meaning |
 |---|---|---|---|
@@ -154,8 +151,29 @@ TRK 4417, drawn from its true state with this much error:
 | `opening.sigma_kms` | 0.3 | km/s | 1σ velocity error. |
 | `opening.cue` | | [plain, doctrinal] | The log line that says how it was cued. |
 
-Any other Red ship starts unknown: Blue tracks it only once its own sensors
-find it.
+A ship with `"beacon_track": "<label>"` starts named by its beacon: a tight,
+identified neutral track. Any other Red ship starts unknown: Blue tracks it
+only once its own sensors find it, unless it is listed in `catalogued`.
+
+## Catalogued objects, ground radars and the opening view
+
+These three blocks are used by `data/scenarios/close_pass_earth.json`.
+
+- `catalogued`: objects Blue already has in a public catalogue. Each entry is
+  `id`, optional `side`, `sigma_km` and `sigma_kms`. Blue starts with a track on
+  each one: its true state plus random error of that size, already identified
+  by class.
+- `sites`: ground stations on the turning Earth. Each entry is `id`, `name`,
+  `short`, `class` and `ground` {`lat_deg`, `lon_deg`, `h_km`} (WGS 84). A
+  site's class may carry a `radar` block {`site`: true, `sigma_range_km`,
+  `sigma_angle_deg`, `min_el_deg`, `max_range_km`, `cadence_s`}. The radar
+  measures range and two angles for any non-Blue object above its elevation
+  mask and within its reach.
+- `view`: {`actor`, `focus`, `select`, `dist`, `pitch`}. These set the craft
+  the player starts in, the craft the camera looks at, what is selected at
+  first, and the camera's distance and tilt.
+
+In a world centred on any body but Jupiter, tracks are 3-D (six numbers).
 
 ## Civil traffic
 
@@ -282,7 +300,7 @@ godot --headless --path godot --script res://cli/run.gd -- \
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--scenario=` | `res://data/campaign.json` | The scenario. Empty runs `game.json` alone. |
+| `--scenario=` | `res://data/scenarios/close_pass_earth.json` | The scenario. Empty runs `game.json` alone. |
 | `--hours=` | 24 | Sim hours to run. |
 | `--step=` | 600 | Seconds between `step` lines. The world acts every 600 s look whatever this is. |
 | `--seed=` | `game.json`'s | The master random seed. |

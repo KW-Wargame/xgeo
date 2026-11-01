@@ -2,7 +2,8 @@
 ## (gravity.gd), and the systems that act on it each look: sensing (what Blue
 ## learns), Red's behaviour, the effects, and the campaign's bookkeeping.
 ## Content: data/game.json (exported from the JS engine) and
-## data/campaign.json (the scenario, CLOSE PASS).
+## a scenario file (data/scenarios/close_pass_earth.json, CLOSE PASS; the
+## Jupiter shadowing survives as a test world, tests/fixtures/jupiter_shadow.json).
 class_name Sim
 extends RefCounted
 
@@ -31,6 +32,7 @@ var tracks := {} # ship id -> Track (Blue's belief)
 var track_n := 4417
 var log: Array = []
 var escalation := 0.0
+var tutorial := false # the walkthrough is running: Red plays by the scenario's "tutorial" settings
 var next_look := LOOK
 var sensing: Sensing
 var thermal: Thermal
@@ -39,11 +41,33 @@ var traffic: Traffic
 var effects: Effects
 var campaign: Campaign
 var debris: Array = [] # clouds (Breakup.cloud): {r, v, t, n, M, cat, of, frags}
-var scheduled: Array = [] # planned burns: {at, id, target, tof}
+var scheduled: Array = [] # planned burns: {at, id, target, tof}; to an orbit also {goal, nu}; joining it on arrival {insert: true, goal}
 
 
 ## The scenario a plain Sim.new() plays ("" for none: game.json alone).
-static var campaign_path := "res://data/campaign.json"
+static var campaign_path := "res://data/scenarios/close_pass_earth.json"
+
+## The world the app plays (Sim.make()): a plain Sim, unless a layer built on
+## Core (Pro) sets its own world here before the first scene starts.
+static var maker := Callable()
+
+
+static func make() -> Sim:
+	return maker.call() if maker.is_valid() else Sim.new()
+
+
+## The body the world's frame is centred on, whose pull mu is: Jupiter for
+## the campaign; a world about another body (a planet in ephem.gd) sets it,
+## and the view draws the Sun, the planets and Jupiter about it (body_pos).
+var central := "jupiter"
+## How the view opens on this world: {actor (the ship the player acts with),
+## focus (a ship or body id), dist (render units, 1,000 km), pitch}, from a
+## scenario's "view" block or a layer's world; what is left out stays the campaign's.
+var opening := {}
+## The heading's operation and area (HUD) for a world with no campaign file;
+## a campaign's own "name" and "area" come first.
+var title := ""
+var area := ""
 
 
 func _init(path := "res://data/game.json", camp_path := "*", seed_ := -1, run_ := 0) -> void:
@@ -52,12 +76,30 @@ func _init(path := "res://data/game.json", camp_path := "*", seed_ := -1, run_ :
 	data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	camp = JSON.parse_string(FileAccess.get_file_as_string(camp_path)) if camp_path != "" and FileAccess.file_exists(camp_path) else {}
 	interplanetary = bool(camp.get("interplanetary", false)) or OS.get_cmdline_user_args().has("--interplanetary")
+	# A scenario about another body: its "central" block stands in for Jupiter's
+	# (data.jupiter holds the central body's constants, named for the campaign
+	# it began with), with that body's moons (none at Earth here) and its date.
+	var cb: Dictionary = camp.get("central", {})
+	if not cb.is_empty():
+		central = String(cb.id)
+		data.jupiter.merge(cb, true)
+		data.moons = cb.get("moons", [])
+		data.startUtc = float(cb.get("startUtc", data.startUtc))
 	mu = data.jupiter.gm
 	moons = data.moons
+	# How the view opens and the ship it acts with: {actor, focus, dist, pitch}.
+	opening = camp.get("view", data.scenario.get("view", {})) # game.json alone has its own
 	# The force model holds the constants it needs, not this Sim: no reference
 	# cycle, and a track (Track.gravity is shared) never calls into a freed world.
 	gravity = Gravity.new(mu, moons, _moon_state_of(moons, mu, float(data.epochOffset)))
 	gravity.utc_of = _utc_of(float(data.startUtc))
+	if not cb.is_empty():
+		gravity.central = central
+		gravity.j2 = float(cb.j2)
+		gravity.r_ref = float(cb.radius)
+		gravity.pole = _icrf_dir(cb.get("pole", [0.0, 0.0, 1.0]))
+		if Ephem.BODY.has(central):
+			gravity.far = Ephem.soi(central)
 	Track.gravity = gravity
 	master_seed = int(data.scenario.seed) if seed_ < 0 else seed_
 	run = run_
@@ -74,6 +116,14 @@ func _init(path := "res://data/game.json", camp_path := "*", seed_ := -1, run_ :
 		var d: Dictionary = s.duplicate(true)
 		if d.has("orbit"):
 			_place(d)
+		elif d.has("state"):
+			_place_state(d)
+		elif d.has("near"):
+			var o: Dictionary = by_id[String(d.near.of)]
+			var rv := beside(o.r, o.v, d.near.ric_m)
+			d.r0 = rv[0]
+			d.v0 = rv[1]
+			d.t0 = 0.0
 		_add(d)
 	if not camp.is_empty():
 		_add_campaign()
@@ -118,6 +168,41 @@ func _place(d: Dictionary) -> void:
 	d.t0 = 0.0
 
 
+## A ship from its state at the scenario's start in the ICRF (GCRF) about the
+## central body: {"state": {"r": km, "v": km/s}}, as an element set gives it
+## (SGP4, then TEME to GCRF).
+func _place_state(d: Dictionary) -> void:
+	d.r0 = Array(_icrf_vec(d.state.r))
+	d.v0 = Array(_icrf_vec(d.state.v))
+	d.t0 = 0.0
+
+
+func _icrf_vec(x: Array) -> PackedFloat64Array:
+	return Ephem._to_game(PackedFloat64Array([float(x[0]), float(x[1]), float(x[2])]), Ephem.centuries(float(data.startUtc)))
+
+
+func _icrf_dir(x: Array) -> PackedFloat64Array:
+	var g := _icrf_vec(x)
+	return V.scale(g, 1.0 / V.norm(g))
+
+
+## A state ric_m metres from (r, v) in its radial, in-track and cross-track
+## axes that does not drift away: the reference velocity, plus the frame's turn
+## (omega = r x v / r^2) carried to the offset, plus -2 n x0 in-track for a
+## radial offset x0 (the Clohessy-Wiltshire condition for no secular drift:
+## Vallado 2013, Fundamentals of Astrodynamics, section 6.8). It then circles its
+## place on a 2:1 ellipse, x0 radially and 2 x0 in-track, once an orbit.
+static func beside(r: PackedFloat64Array, v: PackedFloat64Array, ric_m: Array) -> Array:
+	var R := V.scale(r, 1.0 / V.norm(r))
+	var h := V.cross(r, v)
+	var C := V.scale(h, 1.0 / V.norm(h))
+	var I := V.cross(C, R)
+	var d := V.add(V.add(V.scale(R, float(ric_m[0]) * 1e-3), V.scale(I, float(ric_m[1]) * 1e-3)), V.scale(C, float(ric_m[2]) * 1e-3))
+	var w := V.scale(h, 1.0 / V.dot(r, r))
+	var n := V.norm(w)
+	return [V.add(r, d), V.add(V.add(v, V.cross(w, d)), V.scale(I, -2.0 * n * float(ric_m[0]) * 1e-3))]
+
+
 func _add_campaign() -> void:
 	for r in camp.get("red", []):
 		if r.get("from_game", false):
@@ -143,6 +228,17 @@ func _add_campaign() -> void:
 			# Its own channel: a copy of the class with this frequency.
 			s.cls = s.cls.duplicate(true)
 			s.cls.ttc.f = float(c.f)
+	# Ground sites (radars, telescopes) on the turning Earth: {id, name, class, ground}.
+	for g in camp.get("sites", []):
+		var s: Dictionary = g.duplicate(true)
+		s.classId = g.class
+		s.side = g.get("side", "blue")
+		s.kind = "site"
+		var st := ground_state(g.ground)
+		s.r0 = Array(st[0])
+		s.v0 = Array(st[1])
+		s.t0 = 0.0
+		_add(s)
 	for b in camp.get("blue_extra", []):
 		var g := moon_state(b.staged.moon, 0.0)
 		var rn := V.norm(g[0])
@@ -164,14 +260,14 @@ func pocket(id: String) -> Dictionary:
 
 
 ## The point a pocket is centred on at time at, and its velocity: a Lagrange
-## point leads or trails its moon by 60° on the same orbit.
+## point leads or trails its moon by 60° on the same orbit; any other sits
+## still, radius km out on the x axis.
 func pocket_state(p: Dictionary, at: float) -> Array:
 	if p.kind == "lagrange":
 		var m := moon_state(p.moon, at)
 		var a := deg_to_rad(float(p.lead))
 		return [V.of(m[0][0] * cos(a) - m[0][1] * sin(a), m[0][0] * sin(a) + m[0][1] * cos(a)), V.of(m[1][0] * cos(a) - m[1][1] * sin(a), m[1][0] * sin(a) + m[1][1] * cos(a))]
-	var mv: Dictionary = by_id.get("mv", {})
-	return [mv.r, mv.v] if not mv.is_empty() else [V.of(float(p.radius), 0), V.of(0, 0)]
+	return [V.of(float(p.radius), 0), V.of(0, 0)]
 
 
 func pocket_center(p: Dictionary, at := NAN) -> PackedFloat64Array:
@@ -225,18 +321,30 @@ func range_km(a: String, b: String) -> float:
 
 
 ## The velocity that keeps a ship at r alongside one at (tr, tv): the
-## target's own orbit, turned about Jupiter to r. Same energy, so the same
-## period, and the same flight-path angle: the two coast round together at
+## target's own orbit, turned about the central body to r. Same energy, so the
+## same period, and the same flight-path angle: the two coast round together at
 ## their offset, where matching velocity alone (equal speeds at different
 ## places in the field) lets them drift apart (Clohessy–Wiltshire; Vallado
-## 2013, §6.8). In the orbital plane, as the game is.
+## 2013, §6.8). The turn is about tr × r (Rodrigues' formula), so an offset
+## out of the target's plane tilts the orbit with it; in the game plane it is
+## the turn about z it always was.
 func station_v(r: PackedFloat64Array, tr: PackedFloat64Array, tv: PackedFloat64Array) -> PackedFloat64Array:
-	var th := atan2(tr[0] * r[1] - tr[1] * r[0], tr[0] * r[0] + tr[1] * r[1])
-	var c := cos(th)
-	var s := sin(th)
 	var v2 := V.dot(tv, tv) + 2.0 * mu * (1.0 / V.norm(r) - 1.0 / V.norm(tr))
 	var spd := sqrt(maxf(v2, 0.0)) / maxf(V.norm(tv), 1e-9)
-	return V.of((tv[0] * c - tv[1] * s) * spd, (tv[0] * s + tv[1] * c) * spd, 0.0)
+	if r.size() < 3 or tr.size() < 3 or tv.size() < 3 or (r[2] == 0.0 and tr[2] == 0.0 and tv[2] == 0.0):
+		var th := atan2(tr[0] * r[1] - tr[1] * r[0], tr[0] * r[0] + tr[1] * r[1])
+		var c := cos(th)
+		var s := sin(th)
+		return V.of((tv[0] * c - tv[1] * s) * spd, (tv[0] * s + tv[1] * c) * spd, 0.0)
+	var k := V.cross(tr, r)
+	var kn := V.norm(k)
+	if kn < 1e-12:
+		return V.scale(tv, spd)
+	k = V.scale(k, 1.0 / kn)
+	var c := V.dot(tr, r) / (V.norm(tr) * V.norm(r))
+	var s := kn / (V.norm(tr) * V.norm(r))
+	var out := V.add(V.add(V.scale(tv, c), V.scale(V.cross(k, tv), s)), V.scale(k, V.dot(k, tv) * (1.0 - c)))
+	return V.scale(out, spd)
 
 
 func range_rate(a: String, b: String) -> float:
@@ -272,13 +380,28 @@ func advance(dt: float) -> void:
 		if h <= 1e-9:
 			h = minf(dt, LOOK)
 		h = minf(h, effects.max_step()) # fine steps while a kill vehicle homes
+		for b in scheduled: # stop on a planned burn's moment: flown late, it is another burn
+			if float(b.at) - t > 1e-6:
+				h = minf(h, float(b.at) - t)
 		_step(h)
 		dt -= h
 		for b in scheduled.duplicate():
 			if t >= b.at:
 				scheduled.erase(b)
 				var tgt: String = b.target
-				var plan := plan_to(b.id, pocket_center(pocket(tgt.substr(7)), t + b.tof), b.tof, 0.0, tgt) if tgt.begins_with("pocket:") else (plan_planet(b.id, tgt.substr(7), b.tof) if tgt.begins_with("planet:") else plan_intercept(b.id, tgt, b.tof))
+				if b.get("insert", false):
+					execute(plan_insert(b.id, b.goal))
+					continue
+				if b.get("approach", false):
+					_approach(b)
+					continue
+				if b.get("capture", false):
+					_capture(b)
+					continue
+				if tgt.begins_with("goal:"):
+					execute(plan_goal(b.id, b.goal, b.tof, float(b.nu), tgt))
+					continue
+				var plan := plan_to(b.id, pocket_center(pocket(tgt.substr(7)), t + b.tof), b.tof, 0.0, tgt) if tgt.begins_with("pocket:") else (plan_planet(b.id, tgt.substr(7), b.tof, b.get("arr", {})) if tgt.begins_with("planet:") else plan_intercept(b.id, tgt, b.tof))
 				execute(plan)
 		if t >= next_look - 1e-6:
 			thermal.step(LOOK)
@@ -293,7 +416,7 @@ func advance(dt: float) -> void:
 func _step(h: float) -> void:
 	var sub_h := minf(60.0, h)
 	for s in ships:
-		if s.has("r") and not s.has("onMoon") and s.alive:
+		if s.has("r") and not s.has("onMoon") and not s.has("ground") and s.alive:
 			# Civil traffic keeps to Kepler orbits (cheap); everyone else feels the moons.
 			var st: Array = Kepler.propagate(s.r, s.v, h, mu) if s.get("kind", "") == "civil" else gravity.coast(s.r, s.v, t, h, sub_h)
 			s.r = st[0]
@@ -318,6 +441,34 @@ func _update_fixed() -> void:
 			var st := moon_state(s.onMoon, t)
 			s.r = st[0]
 			s.v = st[1]
+		elif s.has("ground"):
+			var st := ground_state(s.ground)
+			s.r = st[0]
+			s.v = st[1]
+
+
+const EARTH_RATE := 7.292115e-5 # rad/s, IERS Conventions 2010 (sidereal)
+const WGS84_F := 1.0 / 298.257223563
+
+
+## A site on the Earth at {lat_deg, lon_deg, h_km} (WGS 84, geodetic) in the
+## world's frame now, and its velocity as the Earth turns it: the
+## ellipsoid's point (Vallado 2013, Algorithm 51), turned into the ICRF by
+## Ephem.earth_fixed, then into the game's axes.
+func ground_state(g: Dictionary, at := NAN) -> Array:
+	var lat := deg_to_rad(float(g.lat_deg))
+	var lon := deg_to_rad(float(g.lon_deg))
+	var h := float(g.get("h_km", 0.0))
+	var Re := central_radius()
+	var e2 := WGS84_F * (2.0 - WGS84_F)
+	var N := Re / sqrt(1.0 - e2 * sin(lat) * sin(lat))
+	var ecef := Vector3((N + h) * cos(lat) * cos(lon), (N + h) * cos(lat) * sin(lon), (N * (1.0 - e2) + h) * sin(lat))
+	var ms := utc_ms(at)
+	var B := Ephem.earth_fixed(ms)
+	var icrf := B * ecef
+	var r := Ephem._to_game(PackedFloat64Array([icrf.x, icrf.y, icrf.z]), Ephem.centuries(ms))
+	var pole := _icrf_dir([B.z.x, B.z.y, B.z.z])
+	return [r, V.scale(V.cross(pole, r), EARTH_RATE)]
 
 
 ## Coast a copy of a ship's state ahead under full gravity (its true future).
@@ -354,10 +505,26 @@ func osculating(r: PackedFloat64Array, v: PackedFloat64Array, points := 256) -> 
 	return out
 
 
+## Our first station (a fixed site in space, kind "station"), or "".
+func station() -> String:
+	for s in ships:
+		if s.side == "blue" and s.kind == "station" and s.alive:
+			return s.id
+	return ""
+
+
+## The class of the first live Red craft with a radio, or "".
+func red_radio_class() -> String:
+	for s in ships:
+		if s.side == "red" and s.alive and s.cls.has("ttc"):
+			return String(s.classId)
+	return ""
+
+
 ## How far (km) an ear hears one of a Red class's command reports at even odds,
 ## from a bystander's angle: 90° off the line to its handler (a far sidelobe),
 ## with the ear looking straight at it.
-func ear_range(ear_id: String, red_class := "vesper", off_t := PI / 2.0) -> float:
+func ear_range(ear_id: String, red_class: String, off_t := PI / 2.0) -> float:
 	return Sensing.reach_km(data.classes[red_class].ttc, by_id[ear_id].cls.esm, off_t, float(data.cfg.radio.get("pfa", 1e-6)))
 
 
@@ -369,26 +536,214 @@ func plan_intercept(id: String, target: String, tof: float, truth := false) -> D
 	var tgt: Dictionary = by_id[target]
 	var node: PackedFloat64Array
 	var sigma := 0.0
+	var now: Array # where it is now and how it moves (ours: the truth; Red: our track)
 	if tgt.side == "red" and not truth:
 		if not tracks.has(target):
 			return {"ok": false, "why": "no track on it"}
 		var f: Track = tracks[target].forecast(t + tof)
 		node = f.pos()
 		sigma = f.ellipse().major
+		var f0: Track = tracks[target].forecast(t)
+		now = [f0.pos(), f0.vel()]
 	else:
 		node = predict(target, tof / HOUR, maxi(12, int(tof / 600.0))).back()
-	return plan_to(id, node, tof, sigma, target)
+		now = [tgt.r, tgt.v]
+	# Lambert is two-body: aimed at where two-body motion takes the target, it
+	# leaves out the same pulls (the Earth's bulge) on both craft, so its cost
+	# is close to the real one; the burn is then refined to the true node.
+	var aim := node
+	if now[0].size() == s.r.size() and V.dist(now[0], s.r) < 0.05 * V.norm(s.r):
+		aim = Kepler.propagate(now[0], now[1], tof, mu)[0]
+	return plan_to(id, node, tof, sigma, target, aim)
 
 
-func plan_to(id: String, node: PackedFloat64Array, tof: float, sigma := 0.0, target := "") -> Dictionary:
+## A transfer to node in tof: Lambert's cheapest arc of all the whole turns
+## the time allows (in low orbit a few hours is a few turns, and the
+## single-turn arc the long way round costs hundreds of m/s). One with turns
+## is flown as a "turns" plan: refined by shooting (_shoot), which keeps them.
+func plan_to(id: String, node: PackedFloat64Array, tof: float, sigma := 0.0, target := "", aim := PackedFloat64Array()) -> Dictionary:
 	var s: Dictionary = by_id[id]
-	var sol := Lambert.solve(s.r, node, tof, mu)
-	if sol.is_empty():
+	if aim.is_empty():
+		aim = node
+	var a := Kepler.semi_major_axis(s.r, s.v, mu)
+	var turns := int(tof / (TAU * sqrt(pow(a, 3.0) / mu))) if a > 0.0 else 0
+	var all := Lambert.solve_all(s.r, aim, tof, mu, true, mini(turns, 8), V.cross(s.r, s.v))
+	if all.is_empty():
 		return {"ok": false, "why": "no transfer"}
-	var dv_vec := V.sub(sol[0], s.v)
+	var best: Dictionary = all[0]
+	for o in all:
+		if V.dist(o.v1, s.v) < V.dist(best.v1, s.v):
+			best = o
+	var dv_vec := V.sub(best.v1, s.v)
 	var dv := V.norm(dv_vec)
 	var ok := dv <= delta_v(id)
-	return {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": target, "dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": node, "sigma": sigma, "v2": sol[1]}
+	var plan := {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": target, "dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": node, "sigma": sigma, "v2": best.v2}
+	if int(best.revs) > 0:
+		plan.kind = "turns"
+	return plan
+
+
+## To an orbit rather than a craft (OrbitGoal elements): Lambert to the point
+## at anomaly nu on it, arriving after tof; flown, it sets the burn that joins
+## the orbit there (plan_insert) for the moment it arrives.
+func plan_goal(id: String, goal: Dictionary, tof: float, nu: float, target := "goal:") -> Dictionary:
+	if goal.has("body"):
+		return plan_moon(id, goal, tof, target)
+	var st := Arrival.lagrange(int(goal.point), utc_ms(t + tof)) if goal.has("point") else OrbitGoal.state(self, goal, nu)
+	var plan := plan_to(id, st[0], tof, 0.0, target)
+	plan.goal = goal
+	if goal.has("point"):
+		plan.kind = "point" # days out, the Moon bends it: refined by the state-transition matrix
+	return plan
+
+
+## Join an orbit from where a craft is: the orbit's velocity at its point
+## nearest the craft, less the craft's own (no refining: it is a burn now).
+func plan_insert(id: String, goal: Dictionary) -> Dictionary:
+	var s: Dictionary = by_id[id]
+	var vg: PackedFloat64Array = Arrival.lagrange(int(goal.point), utc_ms())[1] if goal.has("point") else OrbitGoal.state(self, goal, OrbitGoal.nu_at(self, goal, s.r))[1]
+	var dv_vec := V.sub(vg, s.v)
+	var dv := V.norm(dv_vec)
+	var ok := dv <= delta_v(id)
+	return {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": "goal:joined", "dv_vec": dv_vec, "dv": dv, "arrive": t, "node": s.r, "kind": "orbit"}
+
+
+## To the Moon, to stay (goal {body: "moon", hp, ha, i}): a Lambert arc about
+## the Earth to the Moon's place on arrival, aimed off it in the B-plane for a
+## pass at the low point asked for (Arrival). Flown, it sets the correction
+## near the Moon and the burn into orbit there (_approach, _capture).
+func plan_moon(id: String, goal: Dictionary, tof: float, target := "goal:moon") -> Dictionary:
+	var s: Dictionary = by_id[id]
+	var c := moon_cell(s.r, s.v, t, tof, goal)
+	if c.is_empty():
+		return {"ok": false, "why": "no transfer"}
+	var dv_vec := V.sub(c.v1, s.v)
+	var dv := V.norm(dv_vec)
+	var ok := dv <= delta_v(id)
+	return {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": target, "dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": c.node, "sigma": 0.0,
+		"v2": c.v2, "kind": "arrive", "body": "moon", "arr": goal, "capture": c.capture}
+
+
+## One way to the Moon from (r0, v0) at t0, flying tof: the patched conic's
+## {v1, v2, dv, capture, node (the aim point), vinf, tilt}; {} if none.
+func moon_cell(r0: PackedFloat64Array, v0: PackedFloat64Array, t0: float, tof: float, goal: Dictionary) -> Dictionary:
+	var ms := utc_ms(t0 + tof)
+	var m := Arrival.moon_state(ms)
+	var A := Arrival.radii("moon", goal)
+	var off := V.of(0, 0, 0)
+	var sol := []
+	var vn := 0.0
+	var pl := []
+	for _k in 3: # the aim moves the arrival, and the arrival the aim: settles in two or three
+		sol = Lambert.solve(r0, V.add(m[0], off), tof, mu, true, V.cross(r0, v0))
+		if sol.is_empty():
+			return {}
+		var vi := V.sub(sol[1], m[1])
+		vn = V.norm(vi)
+		var sd := V.scale(vi, 1.0 / vn)
+		pl = Arrival.plane(sd, Arrival.pole("moon", ms), A.i)
+		off = Arrival.aim(sd, pl[0], vn, Ephem.GM_MOON, A.rp)
+	return {"v1": sol[0], "v2": sol[1], "dv": V.dist(sol[0], v0), "capture": Arrival.capture_dv(vn, Ephem.GM_MOON, A.rp, A.ra), "node": V.add(m[0], off), "vinf": vn, "tilt": pl[1]}
+
+
+## A body's state in the world's frame at sim time at: the Moon (about the
+## Earth), or a planet.
+func body_state(body: String, at := NAN) -> Array:
+	if body == "moon":
+		return Arrival.moon_state(utc_ms(at))
+	var P := Ephem.state(body, utc_ms(at))
+	return [to_world(P[0], at), to_world_v(P[1], at)]
+
+
+## Near the body: re-aim at the low point (a Lambert arc about the body to it,
+## refined under full gravity), and set the burn into orbit for when it is there.
+func _approach(b: Dictionary) -> void:
+	var id: String = b.id
+	var body: String = b.body
+	var s: Dictionary = by_id[id]
+	if not s.alive:
+		return
+	var A := Arrival.radii(body, b.arr)
+	var mu_b := Arrival.gm(body)
+	var B := body_state(body)
+	var r := V.sub(s.r, B[0])
+	var v := V.sub(s.v, B[1])
+	var rn := V.norm(r)
+	var vinf := sqrt(maxf(V.dot(v, v) - 2.0 * mu_b / rn, 1e-6))
+	# The plane holds where the craft is (a Lambert arc's plane holds both
+	# its ends), at the tilt asked for, the nearer of the two to its own.
+	var h := V.cross(r, v)
+	h = V.scale(h, 1.0 / V.norm(h))
+	if A.i >= 0.0:
+		h = Arrival.plane(V.scale(r, 1.0 / rn), Arrival.pole(body, utc_ms()), A.i, h)[0]
+	var sd := V.sub(v, V.scale(h, V.dot(v, h)))
+	sd = V.scale(sd, 1.0 / V.norm(sd))
+	var P := V.scale(Arrival.periapsis_dir(sd, h, vinf, mu_b, A.rp), A.rp)
+	var tof := Arrival.time_to_peri(rn, vinf, mu_b, A.rp)
+	var tag := "orbit:" + body
+	if tof < 600.0:
+		scheduled.append({"at": t + maxf(tof, 1.0), "id": id, "target": tag, "capture": true, "body": body, "arr": b.arr})
+		return
+	var sol := Lambert.solve(r, P, tof, mu_b, true, h)
+	if sol.is_empty():
+		say("burn", "%s found no way to its low point at %s." % [s.short, Arrival.name_of(body)], "warn")
+		return
+	var node := V.add(body_state(body, t + tof)[0], P)
+	var v1: PackedFloat64Array = _shoot(id, V.add(sol[0], B[1]), node, tof)[0]
+	var dv_vec := V.sub(v1, s.v)
+	var dv := V.norm(dv_vec)
+	if execute({"ok": dv <= delta_v(id), "id": id, "target": tag, "dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": node, "kind": "orbit"}):
+		scheduled.append({"at": t + tof, "id": id, "target": tag, "capture": true, "body": body, "arr": b.arr})
+	else:
+		say("burn", "%s cannot afford the correction to its low point at %s." % [s.short, Arrival.name_of(body)], "warn")
+
+
+## At the low point: slow into the orbit asked for, its low point where the
+## craft is, in the plane it is in.
+func _capture(b: Dictionary) -> void:
+	var id: String = b.id
+	var body: String = b.body
+	var s: Dictionary = by_id[id]
+	if not s.alive:
+		return
+	var A := Arrival.radii(body, b.arr)
+	var mu_b := Arrival.gm(body)
+	var B := body_state(body)
+	var r := V.sub(s.r, B[0])
+	var v := V.sub(s.v, B[1])
+	var rn := V.norm(r)
+	var h := V.cross(r, v)
+	var td := V.cross(h, r)
+	td = V.scale(td, 1.0 / V.norm(td))
+	var ra := maxf(float(A.ra), rn)
+	var dv_vec := V.sub(V.scale(td, sqrt(mu_b * (2.0 / rn - 2.0 / (rn + ra)))), v)
+	var dv := V.norm(dv_vec)
+	if not execute({"ok": dv <= delta_v(id), "id": id, "target": "orbit:" + body, "dv_vec": dv_vec, "dv": dv, "arrive": t, "node": s.r, "kind": "orbit"}):
+		say("burn", "%s cannot afford to stop at %s: it needs %.2f km/s." % [s.short, Arrival.name_of(body), dv], "warn")
+
+
+## The velocity now that takes a craft to node in tof under full gravity, and
+## how far it misses (km): Newton's method from v1, its Jacobian the
+## state-transition matrix's position-by-velocity block (Gravity.coast_stm).
+func _shoot(id: String, v1: PackedFloat64Array, node: PackedFloat64Array, tof: float) -> Array:
+	var s: Dictionary = by_id[id]
+	var best := v1
+	var bm := INF
+	for _i in 8:
+		var st := gravity.coast_stm(s.r, v1, t, tof)
+		var miss := V.sub(st[0], node)
+		if V.norm(miss) < bm:
+			bm = V.norm(miss)
+			best = v1
+		if bm < 0.5:
+			break
+		var phi: Array = st[2]
+		var J := [V.of(phi[0][3], phi[1][3], phi[2][3]), V.of(phi[0][4], phi[1][4], phi[2][4]), V.of(phi[0][5], phi[1][5], phi[2][5])]
+		var dx := Transfer.solve3(J, miss)
+		if dx.is_empty():
+			break
+		v1 = V.sub(v1, dx)
+	return [best, bm]
 
 
 ## Lambert's transfer is two-body. Close to Jupiter its oblateness (J2) bends a
@@ -411,6 +766,31 @@ func refine(plan: Dictionary, tol_km := 0.05) -> bool:
 	if plan.get("kind", "") == "planet":
 		refine_planet(plan)
 		return true
+	if plan.get("kind", "") == "arrive":
+		# Aimed in the B-plane, as if the Moon did not pull: the correction near it re-aims under its pull.
+		gravity.use_moons = false
+		var ok_ := _refine_to(plan, tol_km)
+		gravity.use_moons = true
+		return ok_
+	if plan.get("kind", "") in ["point", "turns"]:
+		var est := V.norm(plan.dv_vec)
+		var sh := _shoot(plan.id, V.add(by_id[plan.id].v, plan.dv_vec), plan.node, float(plan.arrive) - t)
+		plan.dv_vec = V.sub(sh[0], by_id[plan.id].v)
+		plan.dv = V.norm(plan.dv_vec)
+		plan.miss_km = sh[1]
+		plan.ok = plan.dv <= delta_v(plan.id)
+		# Over a few turns the shooting can settle on another, far dearer path
+		# than the one planned (near a half-turn the arcs crowd together): not
+		# the move the player was shown, so it is refused.
+		if plan.get("kind", "") == "turns" and plan.dv > 2.0 * est + 0.005:
+			plan.ok = false
+			plan.why = "no path at this time near the planned cost (%.1f m/s, not %.1f)" % [plan.dv * 1000.0, est * 1000.0]
+			return false
+		return float(sh[1]) < 1.0 and plan.ok
+	return _refine_to(plan, tol_km)
+
+
+func _refine_to(plan: Dictionary, tol_km: float) -> bool:
 	var s: Dictionary = by_id[plan.id]
 	var tof := float(plan.arrive) - t
 	if tof <= 0.0:
@@ -430,7 +810,7 @@ func refine(plan: Dictionary, tol_km := 0.05) -> bool:
 		if best < tol_km or i == REFINE_PASSES - 1:
 			break
 		aim = V.sub(aim, miss)
-		var sol := Lambert.solve(s.r, aim, tof, mu)
+		var sol := Lambert.solve(s.r, aim, tof, mu, true, V.cross(s.r, s.v))
 		if sol.is_empty():
 			break
 		v1 = sol[0]
@@ -446,54 +826,101 @@ func refine(plan: Dictionary, tol_km := 0.05) -> bool:
 var interplanetary := false
 
 
+## The central body's state in the ephemeris's frame (centred on Jupiter, the
+## game's axes) at sim time at: zero for Jupiter's world. A world about another
+## body adds it to a ship's state to place the ship among the planets, and
+## takes it off a planet's to bring the planet into the world's frame.
+func central_state(at := NAN) -> Array:
+	if central == "jupiter":
+		return [V.of(0, 0, 0), V.of(0, 0, 0)]
+	return Ephem.state(central, utc_ms(at))
+
+
+## A ship's state in the ephemeris's frame (see central_state).
+func eph_state(id: String) -> Array:
+	var s: Dictionary = by_id[id]
+	if central == "jupiter":
+		return [s.r, s.v]
+	var C := central_state()
+	return [V.add(s.r, C[0]), V.add(s.v, C[1])]
+
+
+## A body's position (from the ephemeris's frame) in the world's frame at sim time at.
+func to_world(p: PackedFloat64Array, at := NAN) -> PackedFloat64Array:
+	return p if central == "jupiter" else V.sub(p, central_state(at)[0])
+
+
+func to_world_v(v: PackedFloat64Array, at := NAN) -> PackedFloat64Array:
+	return v if central == "jupiter" else V.sub(v, central_state(at)[1])
+
+
 ## Which body's pull a ship is under now: "jupiter", a planet, or "sun".
 func home_of(id: String) -> String:
-	return Transfer.home(by_id[id].r, utc_ms())
+	return Transfer.home(eph_state(id)[0], utc_ms())
 
 
 ## A ship's state relative to a body (game frame axes).
 func rel_state(id: String, body: String, at := NAN) -> Array:
-	var s: Dictionary = by_id[id]
+	var s := eph_state(id)
 	var P := Ephem.state(body, utc_ms(at))
-	return [V.sub(s.r, P[0]), V.sub(s.v, P[1])]
+	return [V.sub(s[0], P[0]), V.sub(s[1], P[1])]
 
 
 ## Plan a flight to a planet arriving tof seconds from now (patched conics,
-## refined under full gravity when flown).
-func plan_planet(id: String, body: String, tof: float) -> Dictionary:
+## refined under full gravity when flown), to stay in the orbit arr asks for
+## (Arrival.radii): flown, it sets the correction near the planet and the
+## burn into that orbit at its low point (_approach, _capture).
+func plan_planet(id: String, body: String, tof: float, arr := {}) -> Dictionary:
 	var from := home_of(id)
 	if from == body:
 		return {"ok": false, "why": "already there"}
 	if from == "sun":
-		return _course_correction(id, body, tof)
+		return _course_correction(id, body, tof, arr)
 	var rv := rel_state(id, from)
-	var tr := Transfer.patched(rv[0], rv[1], from, body, utc_ms(), tof)
+	var tr := Transfer.patched(rv[0], rv[1], from, body, utc_ms(), tof, arr)
 	if tr.is_empty():
 		return {"ok": false, "why": "no transfer"}
 	var s: Dictionary = by_id[id]
-	var dv_vec := V.sub(V.add(tr.v1, Ephem.state(from, utc_ms())[1]), s.v)
+	var dv_vec := V.sub(V.add(tr.v1, Ephem.state(from, utc_ms())[1]), eph_state(id)[1])
 	var dv := V.norm(dv_vec)
 	var ok := dv <= delta_v(id)
 	return {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": "planet:" + body, "kind": "planet", "body": body, "from": from,
-		"dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": V.add(Ephem.pos(body, utc_ms(t + tof)), tr.aim_off), "sigma": 0.0,
-		"vinf": tr.vinf, "R1": tr.R1, "V1": tr.V1, "R2": tr.R2, "capture": tr.capture, "total": tr.total, "v2": V.add(tr.vinf_arr, Ephem.state(body, utc_ms(t + tof))[1])}
+		"dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": to_world(V.add(Ephem.pos(body, utc_ms(t + tof)), tr.aim_off), t + tof), "sigma": 0.0,
+		"vinf": tr.vinf, "R1": tr.R1, "V1": tr.V1, "R2": tr.R2, "capture": tr.capture, "total": tr.total, "v2": to_world_v(V.add(tr.vinf_arr, Ephem.state(body, utc_ms(t + tof))[1]), t + tof),
+		"arr": arr, "vinf_arr": tr.vinf_arr, "tilt": tr.tilt}
 
 
 ## One cell of the planner's chart for a planet: wait dep seconds (coasting on
 ## the two-body orbit about where the ship is), then fly tof. Patched conics
 ## only, no refining: cheap enough for a grid. {} when no transfer.
-func planet_cell(id: String, body: String, dep: float, tof: float) -> Dictionary:
+## Leaving a planet, the escape hyperbola must lie in the plane of the ship's
+## position and v∞ (Transfer.departure), so where in its orbit the ship burns
+## matters: from low orbit a burn at the wrong point turns the plane too and
+## can cost twice as much. As missions do, it burns at the best of PHASES
+## points round the orbit that begins at dep; "dep" in the cell is that
+## burn's wait, s.
+const PHASES := 12
+
+
+func planet_cell(id: String, body: String, dep: float, tof: float, arr := {}) -> Dictionary:
 	var from := home_of(id)
 	if from == body:
 		return {}
 	var rv := rel_state(id, from)
-	var st := Kepler.propagate(rv[0], rv[1], dep, Ephem.gm(from))
-	var ms0 := utc_ms(t + dep)
 	if from != "sun":
-		var tr := Transfer.patched(st[0], st[1], from, body, ms0, tof)
-		if tr.is_empty():
-			return {}
-		return {"dv": tr.dv, "capture": tr.capture, "total": tr.total, "node": V.add(Ephem.pos(body, utc_ms(t + dep + tof)), tr.aim_off)}
+		var mu_f := Ephem.gm(from)
+		var en := V.dot(rv[1], rv[1]) / 2.0 - mu_f / V.norm(rv[0])
+		var period := TAU * sqrt(pow(-mu_f / (2.0 * en), 3.0) / mu_f) if en < 0.0 else 0.0
+		var best := {}
+		for k in (PHASES if period > 0.0 and period < tof / 4.0 else 1):
+			var w := dep + period * k / PHASES
+			var st := Kepler.propagate(rv[0], rv[1], w, mu_f)
+			var tr := Transfer.patched(st[0], st[1], from, body, utc_ms(t + w), tof, arr)
+			if tr.is_empty() or (not best.is_empty() and float(tr.dv) >= float(best.dv)):
+				continue
+			best = {"dv": tr.dv, "capture": tr.capture, "total": tr.total, "dep": w, "tilt": tr.tilt, "node": to_world(V.add(Ephem.pos(body, utc_ms(t + w + tof)), tr.aim_off), t + w + tof)}
+		return best
+	var st := Kepler.propagate(rv[0], rv[1], dep, Ephem.gm(from))
 	# Deep space: straight to it, a Lambert arc about the Sun (rel_state was heliocentric).
 	var ms1 := utc_ms(t + dep + tof)
 	var sun1 := Ephem.state("sun", ms1)
@@ -502,22 +929,19 @@ func planet_cell(id: String, body: String, dep: float, tof: float) -> Dictionary
 	if sol.is_empty():
 		return {}
 	var dv := V.dist(sol[0], st[1])
-	var v2n := V.dist(sol[1], V.sub(P1[1], sun1[1]))
-	var mu2 := Ephem.gm(body)
-	var rp := Transfer.CAPTURE_R * float(Ephem.BODY[body].re)
-	var cap := sqrt(v2n * v2n + 2.0 * mu2 / rp) - sqrt(mu2 / rp)
-	return {"dv": dv, "capture": cap, "total": dv + cap, "node": P1[0]}
+	var a := Transfer.arrive(body, V.sub(sol[1], V.sub(P1[1], sun1[1])), ms1, arr)
+	return {"dv": dv, "capture": a.capture, "total": dv + float(a.capture), "dep": dep, "tilt": a.tilt, "node": to_world(P1[0], t + dep + tof)}
 
 
 ## In deep space, a course correction (what missions call a TCM): the burn
 ## that puts the ship on the Lambert arc about the Sun from where it is to the
 ## aim point, refined under full gravity like any other transfer.
-func _course_correction(id: String, body: String, tof: float) -> Dictionary:
-	var s: Dictionary = by_id[id]
+func _course_correction(id: String, body: String, tof: float, arr := {}) -> Dictionary:
+	var s := eph_state(id)
 	var ms0 := utc_ms()
 	var sun0 := Ephem.state("sun", ms0)
-	var R1 := V.sub(s.r, sun0[0])
-	var V1 := V.sub(s.v, sun0[1])
+	var R1 := V.sub(s[0], sun0[0])
+	var V1 := V.sub(s[1], sun0[1])
 	var ms1 := utc_ms(t + tof)
 	var sun1 := Ephem.state("sun", ms1)
 	var P1 := Ephem.state(body, ms1)
@@ -525,21 +949,18 @@ func _course_correction(id: String, body: String, tof: float) -> Dictionary:
 	if sol.is_empty():
 		return {"ok": false, "why": "no transfer"}
 	var vinf2 := V.sub(sol[1], V.sub(P1[1], sun1[1]))
-	var v2n := V.norm(vinf2)
-	var mu2 := Ephem.gm(body)
-	var rp := Transfer.CAPTURE_R * float(Ephem.BODY[body].re)
-	var b := rp * sqrt(1.0 + 2.0 * mu2 / (rp * v2n * v2n))
-	var side := V.cross(V.of(0, 0, 1), vinf2)
-	var off := V.scale(side, b / maxf(1e-9, V.norm(side)))
+	var a := Transfer.arrive(body, vinf2, ms1, arr)
+	var off: PackedFloat64Array = a.aim
 	sol = Lambert.solve(R1, V.add(V.sub(P1[0], sun1[0]), off), tof, Ephem.GM_SUN)
 	if sol.is_empty():
 		return {"ok": false, "why": "no transfer"}
 	var dv_vec := V.sub(sol[0], V1)
 	var dv := V.norm(dv_vec)
-	var capture := sqrt(v2n * v2n + 2.0 * mu2 / rp) - sqrt(mu2 / rp)
+	var capture := float(a.capture)
 	var plan := {"ok": dv <= delta_v(id), "why": "" if dv <= delta_v(id) else "not enough fuel", "id": id, "target": "planet:" + body, "kind": "planet", "body": body, "from": "sun",
-		"dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": V.add(P1[0], off), "sigma": 0.0, "vinf": dv_vec, "R1": R1, "V1": V1,
-		"R2": V.add(V.sub(P1[0], sun1[0]), off), "capture": capture, "total": dv + capture, "v2": V.add(vinf2, P1[1]), "tcm": true}
+		"dv_vec": dv_vec, "dv": dv, "arrive": t + tof, "node": to_world(V.add(P1[0], off), t + tof), "sigma": 0.0, "vinf": dv_vec, "R1": R1, "V1": V1,
+		"R2": V.add(V.sub(P1[0], sun1[0]), off), "capture": capture, "total": dv + capture, "v2": to_world_v(V.add(vinf2, P1[1]), t + tof), "tcm": true,
+		"arr": arr, "vinf_arr": vinf2, "tilt": a.tilt}
 	return plan # its "v∞" is the burn itself, about the ship's own velocity
 
 
@@ -553,7 +974,7 @@ func refine_planet(plan: Dictionary) -> void:
 	var tof := float(plan.arrive) - t
 	var from: String = plan.from
 	var rv := rel_state(plan.id, from if from != "sun" else "jupiter")
-	var Pv: PackedFloat64Array = Ephem.state(from if from != "sun" else "jupiter", utc_ms())[1]
+	var Pv: PackedFloat64Array = to_world_v(Ephem.state(from if from != "sun" else "jupiter", utc_ms())[1])
 	var vinf: PackedFloat64Array = plan.vinf
 	var v1 := V.add(s.v, plan.dv_vec)
 	var tol := 0.1 * Ephem.soi(String(plan.body))
@@ -664,6 +1085,8 @@ func burn(id: String, dv_vec: PackedFloat64Array) -> bool:
 	s.flash_until = t + maxf(seconds, 300.0)
 	s.burn_seconds = seconds
 	s.burn_dir = V.scale(dv_vec, 1.0 / maxf(dv, 1e-12))
+	# The truth, for tests (sensing never reads it): burns at one moment add up.
+	s.burn_dv_vec = V.add(s.burn_dv_vec, dv_vec) if float(s.get("burn_at", -1.0)) == t and s.has("burn_dv_vec") else dv_vec
 	s.burn_at = t
 	s.burns = int(s.get("burns", 0)) + 1
 	return true
@@ -673,10 +1096,23 @@ func execute(plan: Dictionary) -> bool:
 	if not plan.get("ok", false):
 		return false
 	if plan.get("kind", "") != "orbit" and not refine(plan):
+		if String(plan.get("why", "")) == "":
+			plan.why = "no transfer under full gravity (%s km off)" % String.num(float(plan.get("miss_km", 0.0)), 1)
 		plan.ok = false
-		plan.why = "no transfer under full gravity (%s km off)" % String.num(float(plan.miss_km), 1)
 		return false
 	var ok := burn(plan.id, plan.dv_vec)
+	if ok and plan.has("goal"):
+		scheduled.append({"at": float(plan.arrive), "id": plan.id, "target": plan.target, "insert": true, "goal": plan.goal})
+	if ok and plan.has("arr"):
+		# Near the body, re-aim at the low point (Arrival): a while before
+		# arriving, inside its pull (half its sphere of influence out).
+		var body: String = plan.body
+		var tof := float(plan.arrive) - t
+		var lead := 8.0 * 3600.0
+		if body != "moon":
+			lead = 0.5 * Ephem.soi(body) / maxf(V.norm(plan.get("vinf_arr", V.of(0, 0, 0))), 0.5)
+		lead = minf(lead, 0.3 * tof)
+		scheduled.append({"at": float(plan.arrive) - lead, "id": plan.id, "target": plan.target, "approach": true, "body": body, "arr": plan.arr})
 	if ok and by_id[plan.id].side == "blue":
 		by_id[plan.id].plan_arrive = plan.arrive
 		by_id[plan.id].plan_target = plan.target
@@ -726,20 +1162,50 @@ func drop_buoy(from_id: String) -> String:
 	return b.id
 
 
-## Where Red's handler sits: the outpost near Callisto.
+## Where Red's handler sits: the outpost near Callisto; about another body,
+## the ground station the scenario names (camp.handler.ground), else that
+## body's centre (for pointing a dish).
 func handler_pos(at := NAN) -> PackedFloat64Array:
+	var hd: Dictionary = camp.get("handler", {})
+	if hd.has("ground"):
+		return ground_state(hd.ground, at)[0]
+	if moon("callisto").is_empty():
+		return V.of(0, 0, 0)
 	return moon_state("callisto", t if is_nan(at) else at)[0]
+
+
+## Where a planet, Jupiter or "sun" is in the world's frame (km), at sim time at.
+func body_pos(id: String, at := NAN) -> PackedFloat64Array:
+	var ms := utc_ms(at)
+	return V.sub(Ephem.pos(id, ms), Ephem.pos(central, ms))
+
+
+## The central body's equatorial and polar radii (km): the world's own (a
+## scenario's central block), else the ephemeris's for a planet.
+func central_radius() -> float:
+	return float(data.jupiter.radius) if central == "jupiter" or String(data.jupiter.get("id", "")) == central else float(Ephem.BODY[central].re)
+
+
+func central_polar() -> float:
+	if String(data.jupiter.get("id", "")) == central and data.jupiter.has("polarRadius"):
+		return float(data.jupiter.polarRadius)
+	return float(Ephem.BODY[central].rp)
+
+
+## The Sun about the central body (km), at sim time at.
+func sun_pos(at := NAN) -> PackedFloat64Array:
+	return Ephem.pos("sun", utc_ms(at)) if central == "jupiter" else body_pos("sun", at)
 
 
 func utc_ms(at := NAN) -> float:
 	return float(data.startUtc) + (t if is_nan(at) else at) * 1000.0
 
 
-## Unit vectors from Jupiter toward the Sun and toward Earth, in the game plane
+## Unit vectors toward the Sun (from the central body) and toward Earth (from Jupiter), in the game plane
 ## (JPL approximate planetary positions, core/ephem.gd). At 5 AU the direction
 ## barely changes across the system, so it serves for any ship.
 func sun_dir(at := NAN) -> PackedFloat64Array:
-	return _planar_unit(Ephem.sun(utc_ms(at)))
+	return _planar_unit(Ephem.sun(utc_ms(at)) if central == "jupiter" else body_pos("sun", at))
 
 
 func earth_dir(at := NAN) -> PackedFloat64Array:
