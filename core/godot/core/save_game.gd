@@ -28,6 +28,7 @@ static func save(sim: Sim) -> void:
 ## The whole running world as one value, its own copy (nothing in it is
 ## shared with the sim): what a save holds, and what a branch keeps.
 static func state_of(sim: Sim) -> Dictionary:
+	var overrides := Sim.overrides.duplicate(true) # the scenario's edits (ui/scenario_page.gd), rebuilt on load
 	var ships := []
 	for s in sim.ships:
 		var d := {}
@@ -42,8 +43,20 @@ static func state_of(sim: Sim) -> Dictionary:
 	var state := {"t": sim.t, "next_look": sim.next_look, "escalation": sim.escalation, "ships": ships, "tracks": tracks, "track_n": sim.track_n,
 		"intercepts": sim.intercepts, "log": sim.log, "debris": sim.debris, "scheduled": sim.scheduled, "seed": sim.master_seed, "run": sim.run, "rng": sim.stream_states(),
 		"jamming": sim.effects.jamming, "kvs": sim.effects.kvs, "radar": sim.effects.radar_on, "found": sim.campaign.found, "measures": sim.campaign.measures(), "pending": sim.sensing.pending,
-		"auto": sim.sensing.auto, "dish_aim": sim.sensing.dish_aim, "last_look": sim.sensing.last_look, "doctrinal": Lang.doctrinal}
+		"auto": sim.sensing.auto, "dish_aim": sim.sensing.dish_aim, "last_look": sim.sensing.last_look, "doctrinal": Lang.doctrinal,
+		"overrides": overrides, "h_next": sim.h_next}
 	return bytes_to_var(var_to_bytes(state)) # a deep copy, every double bit for bit
+
+
+## The scenario edits the save was made with (Sim.overrides): set them before
+## the world is built, then load_into() it.
+static func overrides_saved() -> Dictionary:
+	var path := found()
+	if path == "":
+		return {}
+	var raw := FileAccess.get_file_as_bytes(path)
+	var state = str_to_var(raw.get_string_from_utf8()) if raw.size() > 0 and raw[0] == 0x7B else bytes_to_var(raw)
+	return state.get("overrides", {}) if state is Dictionary else {}
 
 
 static func load_into(sim: Sim) -> bool:
@@ -65,6 +78,7 @@ static func apply(sim: Sim, state_in: Dictionary) -> void:
 	var state: Dictionary = bytes_to_var(var_to_bytes(state_in))
 	sim.t = state.t
 	sim.next_look = state.next_look
+	sim.h_next = state.get("h_next", {}) # each craft's next coast step (older saves: none)
 	sim.escalation = state.escalation
 	sim.ships.clear()
 	sim.by_id.clear()

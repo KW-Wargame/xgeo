@@ -52,6 +52,65 @@ static var campaign_path := "res://data/scenarios/close_pass_earth.json"
 static var maker := Callable()
 
 
+## Values a study sets before the world is built, {path: value}: a path is
+## dotted keys into the scenario file ("red_ai.crowdKm", "escalation.leaveAt"),
+## or into game.json with a "game." prefix; in a list, a key picks the entry
+## with that id ("ships.cosmos-2612.plan.legs") or that index. Applied to every
+## Sim made afterwards, so cli/batch.gd can sweep a setting across runs.
+static var overrides := {}
+
+
+## d's value at a dotted path (above), or null if there is none.
+static func get_setting(d, path: String):
+	var at = d
+	for k in path.split("."):
+		if at is Dictionary:
+			at = at.get(k)
+		elif at is Array:
+			var j := -1
+			for n in at.size():
+				if at[n] is Dictionary and String(at[n].get("id", "")) == k:
+					j = n
+			if j < 0 and k.is_valid_int() and int(k) < at.size():
+				j = int(k)
+			at = at[j] if j >= 0 else null
+		else:
+			return null
+	return at
+
+
+## Sets d's value at a dotted path (above); "" if done, else why not.
+static func set_setting(d, path: String, value) -> String:
+	var keys := path.split(".")
+	var at = d
+	for i in keys.size():
+		var k := keys[i]
+		var last := i == keys.size() - 1
+		if at is Dictionary:
+			if last:
+				at[k] = value
+				return ""
+			if not at.has(k):
+				return "no key %s" % k
+			at = at[k]
+		elif at is Array:
+			var j := -1
+			for n in at.size():
+				if at[n] is Dictionary and String(at[n].get("id", "")) == k:
+					j = n
+			if j < 0 and k.is_valid_int() and int(k) < at.size():
+				j = int(k)
+			if j < 0:
+				return "no entry %s" % k
+			if last:
+				at[j] = value
+				return ""
+			at = at[j]
+		else:
+			return "%s is not a list or a table" % k
+	return "empty path"
+
+
 static func make() -> Sim:
 	return maker.call() if maker.is_valid() else Sim.new()
 
@@ -75,6 +134,10 @@ func _init(path := "res://data/game.json", camp_path := "*", seed_ := -1, run_ :
 		camp_path = campaign_path
 	data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	camp = JSON.parse_string(FileAccess.get_file_as_string(camp_path)) if camp_path != "" and FileAccess.file_exists(camp_path) else {}
+	for key in overrides:
+		var why := set_setting(data if String(key).begins_with("game.") else camp, String(key).trim_prefix("game."), overrides[key])
+		if why != "":
+			push_error("override %s: %s" % [key, why])
 	interplanetary = bool(camp.get("interplanetary", false)) or OS.get_cmdline_user_args().has("--interplanetary")
 	# A scenario about another body: its "central" block stands in for Jupiter's
 	# (data.jupiter holds the central body's constants, named for the campaign
@@ -389,6 +452,9 @@ func advance(dt: float) -> void:
 			if t >= b.at:
 				scheduled.erase(b)
 				var tgt: String = b.target
+				if b.get("manual", false):
+					execute(plan_manual(b.id, b.dv_rtn))
+					continue
 				if b.get("insert", false):
 					execute(plan_insert(b.id, b.goal))
 					continue
@@ -413,14 +479,24 @@ func advance(dt: float) -> void:
 			next_look += LOOK
 
 
+var h_next := {} # id → the step size its last coast would take next
+
+
 func _step(h: float) -> void:
-	var sub_h := minf(60.0, h)
 	for s in ships:
 		if s.has("r") and not s.has("onMoon") and not s.has("ground") and s.alive:
 			# Civil traffic keeps to Kepler orbits (cheap); everyone else feels the moons.
-			var st: Array = Kepler.propagate(s.r, s.v, h, mu) if s.get("kind", "") == "civil" else gravity.coast(s.r, s.v, t, h, sub_h)
+			if s.get("kind", "") == "civil":
+				var st: Array = Kepler.propagate(s.r, s.v, h, mu)
+				s.r = st[0]
+				s.v = st[1]
+				continue
+			# Each craft's next coast starts at the step its last one ended on.
+			var st: Array = gravity.coast_from(s.r, s.v, t, h, float(h_next.get(s.id, 0.0)))
 			s.r = st[0]
 			s.v = st[1]
+			if gravity.last_h > 0.0:
+				h_next[s.id] = gravity.last_h
 	# Debris: the cloud's centre and each fragment flown on its own orbit.
 	for d in debris:
 		var st := Kepler.propagate(d.r, d.v, h, mu)
@@ -1090,6 +1166,20 @@ func burn(id: String, dv_vec: PackedFloat64Array) -> bool:
 	s.burn_at = t
 	s.burns = int(s.get("burns", 0)) + 1
 	return true
+
+
+## A burn set by hand (the map's orbit drag): dv_rtn [outward, along the
+## path, across the orbit's plane] in km/s, in the craft's own axes now.
+func plan_manual(id: String, dv_rtn: Array) -> Dictionary:
+	var s: Dictionary = by_id[id]
+	var rh := V.scale(s.r, 1.0 / V.norm(s.r))
+	var n := V.cross(s.r, s.v)
+	n = V.scale(n, 1.0 / V.norm(n))
+	var th := V.cross(n, rh)
+	var dv_vec := V.add(V.add(V.scale(rh, float(dv_rtn[0])), V.scale(th, float(dv_rtn[1]))), V.scale(n, float(dv_rtn[2])))
+	var dv := V.norm(dv_vec)
+	var ok := dv <= delta_v(id)
+	return {"ok": ok, "why": "" if ok else "not enough fuel", "id": id, "target": "goal:new orbit", "dv_vec": dv_vec, "dv": dv, "arrive": t, "node": s.r, "kind": "orbit"}
 
 
 func execute(plan: Dictionary) -> bool:

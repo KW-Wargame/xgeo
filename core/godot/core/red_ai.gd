@@ -135,13 +135,14 @@ const CLOSEST_KM := 0.5
 ## target's orbit passes through it, so it takes the cheapest that stays clear.
 const SAFE_PASS_KM := 0.4
 const SHIFT_LOOKS := 4
+const LEAVE_KMS := 0.004 # its departure burn, prograde (4 m/s; design value)
 const PRESENCE_KM := 25.0 # design value: wide enough that one MATCH keeps you inside it for the 3 h cut-off (a match drifts ~20 km in 3 h)
 
 
 ## The nearest live Blue ship within PRESENCE_KM of s, or "".
 func _shadowed_by(s: Dictionary) -> String:
 	var best := ""
-	var bd := PRESENCE_KM
+	var bd := _red("presenceKm", PRESENCE_KM)
 	for b in sim.blue_ships():
 		if b.has("onMoon") or b.get("kind", "") in ["station", "kv", "buoy", "freighter", "commercial"]: # a warship, not its target or a buoy
 			continue
@@ -178,15 +179,15 @@ func _shadow(s: Dictionary) -> void:
 					_raise("redInside", "shadow_inside" if sim.tracks.has(s.id) else "")
 				if sim.tracks.has(s.id):
 					sim.say("shadow_hold", Lang.f("shadow_hold", [_label(s), _where_rel(float(ai.legs[ai.leg][0])), tgt.short]), "warn", {"from": s.id})
-	var cut_off: bool = ai.state in ["match", "hold"] and rng < 200.0 and sim.t - float(ai.last_link) > LOST_H * H
+	var cut_off: bool = ai.state in ["match", "hold"] and rng < 200.0 and sim.t - float(ai.last_link) > _red("lostHours", LOST_H) * H
 	if cut_off and _shadowed_by(s) == "":
 		# Cut off but nobody alongside: it holds and waits for its link.
 		if not ai.get("told_waiting", false) and sim.tracks.has(s.id):
 			ai.told_waiting = true
-			sim.say("shadow_waits", Lang.f("shadow_waits", [_label(s), Lang.km(PRESENCE_KM)]), "warn", {"from": s.id})
+			sim.say("shadow_waits", Lang.f("shadow_waits", [_label(s), Lang.km(_red("presenceKm", PRESENCE_KM))]), "warn", {"from": s.id})
 	elif cut_off:
 		# Lost its handler with one of ours alongside: back off to a safe, higher orbit (~40 km up).
-		sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), 0.004))
+		sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), _red("leaveKms", LEAVE_KMS)))
 		ai.state = "retreat"
 		sim.say("shadow_retreat", Lang.f("shadow_retreat", [_label(s)]), "good", {"from": s.id})
 		return
@@ -194,18 +195,18 @@ func _shadow(s: Dictionary) -> void:
 		return
 	if ai.state == "hold":
 		var near := _nearest_watcher(s)
-		if not near.is_empty() and float(near.range) < CROWD_KM:
+		if not near.is_empty() and float(near.range) < _red("crowdKm", CROWD_KM):
 			_raise("blueCrowd", "")
 			if int(ai.get("evaded", 0)) >= _evasions():
 				# Crowded again after giving way: it gives the inspection up.
-				sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), 0.004))
+				sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), _red("leaveKms", LEAVE_KMS)))
 				ai.state = "retreat"
 				sim.say("shadow_driven", Lang.f("shadow_driven", [_label(s), tgt.short]), "good", {"from": s.id})
 				return
 			# Give way: a slot on the far side of the target from ours, then on with the plan.
 			ai.evaded = int(ai.get("evaded", 0)) + 1
 			var side := signf(V.dot(V.sub(near.s.r, tgt.r), tgt.v))
-			ai.legs.insert(int(ai.leg) + 1, [-(side if side != 0.0 else 1.0) * EVADE_KM, 4.0, 2.0])
+			ai.legs.insert(int(ai.leg) + 1, [-(side if side != 0.0 else 1.0) * _red("evadeKm", EVADE_KM), 4.0, 2.0])
 			ai.leg = int(ai.leg) + 1
 			_hop(s, tgt)
 			if ai.state == "match":
@@ -216,19 +217,26 @@ func _shadow(s: Dictionary) -> void:
 			ai.leg = int(ai.leg) + 1
 			# Nobody of ours in sight: it takes its next slot nearer.
 			var near := _nearest_watcher(s)
-			if int(ai.leg) < ai.legs.size() and (near.is_empty() or float(near.range) > ALONE_KM) and sim.escalation < _esc("cautiousAt", INF):
+			if int(ai.leg) < ai.legs.size() and (near.is_empty() or float(near.range) > _red("aloneKm", ALONE_KM)) and sim.escalation < _esc("cautiousAt", INF):
 				var leg: Array = ai.legs[ai.leg]
 				var along := float(leg[0])
-				if absf(along) > CLOSEST_KM:
-					leg[0] = signf(along) * maxf(CLOSEST_KM, absf(along) * 0.5)
+				if absf(along) > _red("closestKm", CLOSEST_KM):
+					leg[0] = signf(along) * maxf(_red("closestKm", CLOSEST_KM), absf(along) * 0.5)
 					if sim.tracks.has(s.id):
 						sim.say("shadow_push", Lang.f("shadow_push", [_label(s), tgt.short]), "warn", {"from": s.id})
 		if int(ai.leg) >= ai.legs.size():
 			ai.state = "complete"
-			sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), 0.004))
+			sim.burn(s.id, V.scale(V.scale(s.v, 1.0 / V.norm(s.v)), _red("leaveKms", LEAVE_KMS)))
 			sim.say("shadow_done", Lang.f("shadow_done", [_label(s), tgt.short]), "alert", {"from": s.id})
 			return
 		_hop(s, tgt)
+
+
+## A behaviour setting from the scenario's "red_ai" block (lostHours, crowdKm,
+## evadeKm, evasions, aloneKm, closestKm, presenceKm, leaveKms), or the
+## constant above: a study can then vary them (cli/batch.gd --vary).
+func _red(key: String, or_else: float) -> float:
+	return float(sim.camp.get("red_ai", {}).get(key, or_else))
 
 
 ## A tension setting from the scenario (camp.escalation), or `or_else`.
@@ -244,7 +252,7 @@ func _keep_out() -> float:
 ## In the walkthrough, the scenario's tutorial.evasions (CLOSE PASS: once, so
 ## following the steps wins it).
 func _evasions() -> int:
-	var most := int(sim.camp.get("tutorial", {}).get("evasions", EVASIONS)) if sim.tutorial else EVASIONS
+	var most := int(sim.camp.get("tutorial", {}).get("evasions", EVASIONS)) if sim.tutorial else int(_red("evasions", EVASIONS))
 	if sim.escalation >= _esc("leaveAt", INF):
 		return 0
 	if sim.escalation >= _esc("cautiousAt", INF):

@@ -386,6 +386,57 @@ courses of action run by run then measures the effect of the orders, with
 much less noise than independent runs (Law 2015, *Simulation Modeling and
 Analysis*, 5th ed., §11.2).
 
+Any number in the scenario can be changed for a batch without editing the
+file. A path is dotted, a list entry is named by its `id` or its index, and
+`game.` reaches into `game.json`; each value is JSON:
+
+- `--set=red_ai.crowdKm=3;escalation.leaveAt=40` fixes settings for every run.
+- `--vary=red_ai.crowdKm=3|5|8` sweeps one setting: each value is a case,
+  played for every course of action on the same runs.
+- `--sample=red_ai.crowdKm=3..8;red_ai.evasions=1..3` draws settings afresh
+  for each run, uniformly between the bounds (whole numbers when both bounds
+  are). This is how a study spreads what is not known, such as how an
+  opponent's operators would behave, over the runs. Run k draws the same
+  values for every case and course of action, so the comparison stays paired.
+
+A scenario's `red_ai` block holds the opponent's behaviour settings (how
+close before it gives way, how many times it evades, when it gives up); with
+no block, Core's design values apply.
+
+## Studies: many runs, one report
+
+`tools/study.mjs` runs a batch across all the computer's cores and writes a
+report:
+
+```sh
+node tools/study.mjs godot/data/examples/test_range_study.json --runs=40
+```
+
+A study file names the scenario, the hours, the runs, the courses of action
+and any `set`, `vary` or `sample` settings (command-line options override it).
+It writes to `studies/<name>-<date>/`:
+
+- `runs.csv`: one row per run, for a spreadsheet, with each sampled setting;
+- `runs.jsonl`: every run as the batch runner wrote it;
+- `summary.json` and `report.html`: for each case and course of action, the
+  share of runs won and the mean score, fuel, custody and closest approach,
+  each with its 95% interval; the paired difference from the first course of
+  action; and, when settings are sampled, which of them drive the score
+  (Spearman's rank correlation). The report opens offline in any browser.
+
+Shares carry Wilson score intervals (Wilson 1927); means and paired
+differences carry Student's t intervals (Law 2015, §9.4 and §10.2). A study
+answers "which course of action does better in this model", not "what would
+happen": the score, the objectives and the opponent's behaviour are the
+scenario's design values.
+
+In xGEO Live the same study runs from the title screen (Study · compare), with
+no other software: pick the courses of action, the runs and the bounds of what
+is not known, and read the table; the runs go to a folder as CSV and JSON. The
+Scenario · edit page changes Close Pass's main numbers (where the ships start,
+WATCHMAN-1's fuel, Cosmos 2612's behaviour, the rules of tension, the score's
+weights) to play, to study, or to save as a scenario file of your own.
+
 ## Testing a scenario
 
 `godot/tests/scenario_test.gd` plays TEST RANGE through every part of Core and

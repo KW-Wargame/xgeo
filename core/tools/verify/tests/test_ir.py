@@ -164,7 +164,10 @@ def test_detection(game, check):
         else:
             ang = math.acos(np.clip(np.dot(-o, x - o) / (np.linalg.norm(o) * np.linalg.norm(x - o)), -1, 1))
             jr = math.asin(min(1.0, R_J / np.linalg.norm(o)))
-            bg = g["band"]["discFactor"] if ang < jr else (g["band"]["glareFactor"] if ang < g["cone"] * jr else 1.0)
+            # Glare reaches cone x the apparent radius, but no more than 20 deg past the limb
+            # (about Hubble's bright-Earth avoidance angle; sensing.gd GLARE_MAX).
+            edge = jr + min((g["cone"] - 1) * jr, math.radians(20.0))
+            bg = g["band"]["discFactor"] if ang < jr else (g["band"]["glareFactor"] if ang < edge else 1.0)
             snr = c["I"] / (np.linalg.norm(x - o) * 1000) ** 2 / (c["nei_band"] * bg)
             bad += abs(bg - c["bg"]) > 1e-9
         bad += not math.isclose(snr, c["snr"], rel_tol=1e-9, abs_tol=1e-12)

@@ -1,0 +1,11 @@
+{
+ "name": "TEST RANGE: orders or none",
+ "about": "A study for tools/study.mjs on the TEST RANGE scenario: the example course of action against doing nothing, on the same paired runs. The range has no score, so the report compares fuel, custody and the closest approach. Run it with: node tools/study.mjs godot/data/examples/test_range_study.json",
+ "scenario": "res://data/examples/test_range.json",
+ "hours": 24,
+ "runs": 20,
+ "coas": [
+  "none",
+  "res://data/examples/test_range_coa.json"
+ ]
+}

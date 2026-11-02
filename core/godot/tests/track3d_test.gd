@@ -10,6 +10,8 @@
 ##   NEES, the normalised estimation error squared, near its 6 degrees of
 ##   freedom; Bar-Shalom, Li & Kirubarajan 2001, §5.4), and each radar pass
 ##   tightens it.
+## - The process noise weighted by direction (Track.noise_axes) lands in the
+##   orbit's radial, along-track and cross-track axes.
 extends SceneTree
 
 var fails := 0
@@ -159,5 +161,19 @@ func _init() -> void:
 		"each radar look tightens it: the 1σ after over before at worst %.3f" % worst_ratio)
 	if tr != null:
 		_check(last_p < 16.27, "after a day: %.1f km off the truth with 1σ %.1f km (position NEES %.2f)" % [V.dist(tr.pos(), x.r), tr.ellipse().major, last_p])
+
+	# 4. The process noise weighted by direction lands in the orbit's own axes.
+	# A circular orbit along x moving along y: radial x, along the track y,
+	# across z; 60 s of noise on a track known to a millimetre (two-body).
+	var w := Track.new("w", "W", PackedFloat64Array([7000.0, 0.0, 0.0, 0.0, 7.546, 0.0]), Track.diag([1e-12, 1e-12, 1e-12, 1e-18, 1e-18, 1e-18]), 0.0)
+	w.noise_axes = Vector3(1.0, 0.0, 4.0)
+	var wf := w.forecast(60.0, true)
+	var want := w.accel_noise * w.accel_noise * 60.0 * 60.0 * 60.0 / 3.0
+	_check(absf(wf.P[0][0] / want - 1.0) < 0.01 and wf.P[1][1] < 0.01 * want and absf(wf.P[2][2] / (4.0 * want) - 1.0) < 0.01,
+		"noise weighted (radial 1, along 0, across 4): position variances %.3f, %.3f, %.3f of the unweighted's" % [wf.P[0][0] / want, wf.P[1][1] / want, wf.P[2][2] / want])
+	var one := Track.new("o", "O", w.x.duplicate(), Track.diag([1e-12, 1e-12, 1e-12, 1e-18, 1e-18, 1e-18]), 0.0)
+	var of := one.forecast(60.0, true)
+	_check(absf(of.P[0][0] / want - 1.0) < 0.01 and absf(of.P[1][1] / want - 1.0) < 0.01 and absf(of.P[2][2] / want - 1.0) < 0.01,
+		"unweighted, the same noise on every axis")
 	print("%d failed" % fails)
 	quit(1 if fails > 0 else 0)

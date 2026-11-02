@@ -1,5 +1,5 @@
 {
- "note": "A test world about the Earth for the 3-D tracker (tests/track3d_test.gd): a Red craft on ICEYE-X36's orbit (its CelesTrak element set at epoch, as tests/fixtures/earth_test.json), already in the public catalogue, and two ground radars with their published range accuracy (as data/scenarios/close_pass_earth.json, from xGEO Pro's database): PFISR at Poker Flat and LeoLabs Midland. Hull class of the craft is the game's own, for the test only.",
+ "note": "A test world about the Earth for the 3-D tracker (tests/track3d_test.gd): a Red craft on ICEYE-X36's orbit (its CelesTrak element set at epoch, as tests/fixtures/earth_test.json), already in the public catalogue, and two ground radars with their published range accuracy (as data/scenarios/close_pass_earth.json): PFISR at Poker Flat and LeoLabs Midland. Hull class of the craft is the game's own, for the test only.",
  "id": "track3d-test",
  "name": "TRACK 3-D TEST",
  "central": {"id": "earth", "name": "EARTH", "gm": 398600.4418, "j2": 1.08262668e-3, "radius": 6378.137, "polarRadius": 6356.7523, "sunIrradiance": 1361.0, "geometricAlbedo": 0.367, "blackBodyK": 254.0, "startUtc": 1793048400000, "moons": []},

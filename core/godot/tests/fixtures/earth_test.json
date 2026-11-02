@@ -1,5 +1,5 @@
 {
- "note": "A test world about the Earth (tests/earth_test.gd): ICEYE-X36 at its CelesTrak element set's epoch (26 Oct 2026 21:00 UTC; SGP4, then TEME to GCRF, by xGEO Pro's kernel), and a second craft 500 m behind and 140 m above it on the no-drift orbit. Hull classes are the game's own, for the test only.",
+ "note": "A test world about the Earth (tests/earth_test.gd): ICEYE-X36 at its CelesTrak element set's epoch (26 Oct 2026 21:00 UTC; SGP4, then TEME to GCRF), and a second craft 500 m behind and 140 m above it on the no-drift orbit. Hull classes are the game's own, for the test only.",
  "id": "earth-test",
  "name": "EARTH TEST",
  "central": {"id": "earth", "name": "EARTH", "gm": 398600.4418, "j2": 1.08262668e-3, "radius": 6378.137, "polarRadius": 6356.7523, "sunIrradiance": 1361.0, "geometricAlbedo": 0.367, "blackBodyK": 254.0, "startUtc": 1793048400000, "moons": []},

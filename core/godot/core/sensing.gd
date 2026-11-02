@@ -886,8 +886,8 @@ func _radar(t: float) -> void:
 ## measurement per look of every object not Blue's that stands above its
 ## elevation mask, measured from the local vertical (the site's direction
 ## from the centre), and inside its reach.
-## - A site radar given by its measured accuracy ("site": true; Pro's
-##   database: PFISR, LeoLabs, Space Fence) sees whatever is inside
+## - A site radar given by its measured accuracy ("site": true; the
+##   operators' published figures: PFISR, LeoLabs, Space Fence) sees whatever is inside
 ##   max_range_km, with range to sigma_range_km and both angles to
 ##   sigma_angle_deg, and no SNR test.
 ## - Otherwise the radar equation decides (SNR 20, radar_snr), with range

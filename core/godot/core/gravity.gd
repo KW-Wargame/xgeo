@@ -202,6 +202,23 @@ const DD := [
 ]
 
 
+## The step size the last integration would take next: a hint for the next
+## coast of the same craft (coast_from), so it skips the cautious first guess.
+var last_h := 0.0
+
+
+## Coast for dt seconds (either sign), the first step h0 (the craft's last
+## step, from last_h); every step error-controlled as in coast_to, so only the
+## work changes. Returns [r, v].
+func coast_from(r: PackedFloat64Array, v: PackedFloat64Array, t: float, dt: float, h0: float) -> Array:
+	var y := r.duplicate()
+	y.append_array(v)
+	var d := r.size()
+	last_h = 0.0
+	var yn: PackedFloat64Array = _flow(y, t, [t + dt], d, h0)[0]
+	return [yn.slice(0, d), yn.slice(d, 2 * d)]
+
+
 ## Coast for dt seconds (either sign). Returns [r, v].
 func coast(r: PackedFloat64Array, v: PackedFloat64Array, t: float, dt: float, _max_h := 60.0) -> Array:
 	return coast_to(r, v, t, [t + dt])[0]
@@ -247,7 +264,7 @@ func coast_stm(r: PackedFloat64Array, v: PackedFloat64Array, t: float, dt: float
 
 ## One DOP853 integration of y (the state [r, v], d each, then any Φ rows)
 ## from t, sampled at each of times: y per time.
-func _flow(y: PackedFloat64Array, t: float, times: Array, d: int) -> Array:
+func _flow(y: PackedFloat64Array, t: float, times: Array, d: int, h0 := 0.0) -> Array:
 	var out := []
 	var n := y.size()
 	var nm := 2 * d # what the step control watches: the orbit
@@ -261,12 +278,13 @@ func _flow(y: PackedFloat64Array, t: float, times: Array, d: int) -> Array:
 	if next == times.size():
 		return out
 	var f := _deriv(t, y, d)
-	var h := _first_step(t, y, f, d, sg, span)
+	var h := minf(h0, span) if h0 > 0.0 else _first_step(t, y, f, d, sg, span)
 	var rejected := false
 	var k := []
 	k.resize(16)
 	while next < times.size():
 		var hs := minf(h, sg * (t_end - t))
+		var cut := hs < h # the last step, cut short to land on t_end
 		var hh := sg * hs
 		k[0] = f
 		for s in range(1, 12):
@@ -320,6 +338,7 @@ func _flow(y: PackedFloat64Array, t: float, times: Array, d: int) -> Array:
 		t = t_new
 		y = yn
 		f = fn
+		last_h = maxf(hs * fac, h) if cut else hs * fac
 		h = hs * fac
 		rejected = false
 	return out

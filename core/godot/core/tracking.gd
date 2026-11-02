@@ -70,6 +70,13 @@ const BURN_GUESS := 0.005
 var burn := {}
 var ranged_at := -INF
 var accel_noise := 6e-7 # km/s²: small unseen pushes and what the model leaves out (tuned on the retired NIGHT HERON campaign test, when the covariance still moved two-body)
+## A 3-D track's accel_noise² weighted by direction in its orbit's own axes:
+## (radial, along the track, across it). ONE, the default, is the same on
+## every axis. A passive satellite's force-model error is not the same in
+## each (on real laser ranges to LAGEOS-1 a track with one value was cautious
+## along the track and too sure across it); the game's noise stands for
+## unseen small pushes, so its scenarios keep ONE.
+var noise_axes := Vector3.ONE
 var ident := "unknown" # unknown → classified → identified
 var seen_id := false # named by a telescope (the hull seen): ident "identified"
 var heard_id := false # its signal matched in the threat library: its uplink is known
@@ -214,16 +221,41 @@ func predict(to: float, fast := false) -> void:
 	var d3 := dt * dt * dt / 3.0 * q
 	var d2 := dt * dt / 2.0 * q
 	var d1 := dt * q
-	# White-noise acceleration on each axis (Bar-Shalom et al. 2001, §6.2.2).
+	# White-noise acceleration on each axis (Bar-Shalom et al. 2001, §6.2.2);
+	# with noise_axes, in the orbit's axes at the end of the step.
 	if FP.is_empty():
 		FP = mul(mul(F, P), transpose(F))
+	var g := _axes_weight() if d == 3 and noise_axes != Vector3.ONE else []
 	for a in d:
-		FP[a][a] += d3
-		FP[a][a + d] += d2
-		FP[a + d][a] += d2
-		FP[a + d][a + d] += d1
+		for b in d:
+			var w: float = (1.0 if a == b else 0.0) if g.is_empty() else g[a][b]
+			if w == 0.0:
+				continue
+			FP[a][b] += d3 * w
+			FP[a][b + d] += d2 * w
+			FP[a + d][b] += d2 * w
+			FP[a + d][b + d] += d1 * w
 	P = FP
 	t = to
+
+
+## Aᵀ diag(noise_axes) A, A's rows the radial, along-track and cross-track
+## unit vectors of the estimate's orbit.
+func _axes_weight() -> Array:
+	var r := V.of(x[0], x[1], x[2])
+	var h := V.cross(r, V.of(x[3], x[4], x[5]))
+	var c := V.scale(h, 1.0 / V.norm(h))
+	var rh := V.scale(r, 1.0 / V.norm(r))
+	var ax := [rh, V.cross(c, rh), c]
+	var w := [noise_axes.x, noise_axes.y, noise_axes.z]
+	var g := []
+	for i in 3:
+		var row := PackedFloat64Array([0.0, 0.0, 0.0])
+		for j in 3:
+			for k in 3:
+				row[j] += w[k] * ax[k][i] * ax[k][j]
+		g.append(row)
+	return g
 
 
 ## Past this 1σ, as a share of the distance from the centre, a 3-D track is
@@ -843,6 +875,7 @@ static func eig3(A: Array) -> PackedFloat64Array:
 func forecast(at: float, fast := false) -> Track:
 	var c := Track.new(id, label, x.duplicate(), P.map(func(r): return r.duplicate()), t)
 	c.accel_noise = accel_noise
+	c.noise_axes = noise_axes
 	c.predict(at, fast)
 	return c
 

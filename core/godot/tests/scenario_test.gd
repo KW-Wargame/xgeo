@@ -363,6 +363,49 @@ func _init() -> void:
 	var joined: Array = part0[1].filter(func(x): return x is Dictionary and x.type == "run") + part1[1].filter(func(x): return x is Dictionary and x.type == "run")
 	_check(JSON.stringify(joined) == JSON.stringify(rows), "two processes on runs 0 and 1 give the lines one process gives")
 
+	# 11d. Settings changed without editing the file (Sim.overrides): a dotted
+	# path, a list entry by its id or index, a missing key refused; then the
+	# batch runner's --sample, the same draw for every course of action on run k.
+	var dd := {"ships": [{"id": "a", "orbit": {"radius_km": 1.0}}, {"id": "b"}]}
+	_check(Sim.set_setting(dd, "ships.a.orbit.radius_km", 2.0) == "" and dd.ships[0].orbit.radius_km == 2.0, "a setting is reached by a dotted path and a list entry's id")
+	_check(Sim.set_setting(dd, "ships.1.side", "red") == "" and dd.ships[1].side == "red", "a list entry is reached by its index")
+	_check(Sim.set_setting(dd, "ships.c.side", "red") != "" and Sim.set_setting(dd, "nope.x", 1) != "", "a path to nothing is refused")
+	Sim.overrides = {"ships.pelican.orbit.radius_km": 100000.0}
+	var moved := _world()
+	Sim.overrides = {}
+	_check(absf(V.norm(moved.by_id.pelican.r) - 100000.0) < 1.0 and absf(V.norm(_world().by_id.pelican.r) - 92940.0) < 1.0, "an override changes the world it is set for, and only that one")
+	Sim.overrides = {"escalation.war": 90}
+	var kept: Dictionary = SaveGame.state_of(_world()).get("overrides", {})
+	Sim.overrides = {}
+	_check(kept == {"escalation.war": 90} and Sim.get_setting({"a": [{"id": "b", "c": 3}]}, "a.b.c") == 3 and Sim.get_setting({}, "a.b") == null, "a save keeps the edits its world was built with; a setting reads back by its path")
+	var drawn := _batch(["--coa=none,none", "--runs=2", "--hours=1", "--sample=escalation.war=90.0..100.0;escalation.spare=1..3"])
+	var srows: Array = drawn[1].filter(func(x): return x is Dictionary and x.type == "run")
+	_check(drawn[0] == 0 and srows.size() == 4 and JSON.stringify(srows[0].sampled) == JSON.stringify(srows[1].sampled) and JSON.stringify(srows[0].sampled) != JSON.stringify(srows[2].sampled), "--sample draws per run, the same for every course of action")
+	_check(srows.all(func(x): return x.sampled["escalation.war"] >= 90.0 and x.sampled["escalation.war"] <= 100.0 and x.sampled["escalation.spare"] in [1, 2, 3, 1.0, 2.0, 3.0]), "sampled settings stay inside their bounds, whole numbers when both bounds are")
+
+	# 11e. A study (core/study.gd): its statistics against published values,
+	# then a real one across processes, merged in run order.
+	var wil := Study.share(8, 10)
+	_check(absf(wil.lo - 0.4902) < 1e-4 and absf(wil.hi - 0.9433) < 1e-4, "Wilson's interval for 8 of 10 is 0.490 to 0.943 (Newcombe 1998, method 3)")
+	_check(absf(Study.t975(10) - 2.2281) < 1e-3 and absf(Study.t975(30) - 2.0423) < 1e-4, "Student's t, 95% two-sided: 2.228 at 10 df, 2.042 at 30")
+	var mc := Study.mean_ci([1.0, 2.0, 3.0, 4.0, 5.0])
+	_check(absf(mc.mean - 3.0) < 1e-12 and absf(mc.hi - mc.mean - 2.7764 * sqrt(2.5) / sqrt(5.0)) < 2e-3, "a mean's 95% interval is t·s/√n")
+	_check(absf(Study.spearman([1, 2, 3, 4], [10, 20, 40, 30]) - 0.8) < 1e-12 and absf(Study.spearman([1, 2, 2, 3], [1, 2, 3, 4]) - 0.9487) < 1e-4, "Spearman's rank correlation, with ties sharing their rank")
+	var stu := Study.from_file("res://data/examples/test_range_study.json")
+	stu.runs = 4
+	stu.hours = 2.0
+	stu.dir = OS.get_user_data_dir().path_join("scenario_study")
+	var started := stu.start(2)
+	var waited := 0
+	while stu.running() and waited < 120000:
+		OS.delay_msec(100)
+		waited += 100
+	_check(started and stu.finish() and stu.rows.size() == 8 and stu.rows.map(func(r): return int(r.run)) == [0, 0, 1, 1, 2, 2, 3, 3], "a study on two processes comes back whole, in run order")
+	_check(stu.summary.size() == 2 and stu.summary[0].n == 4 and stu.summary[1].score_vs_first != null and FileAccess.get_file_as_string(stu.dir.path_join("runs.csv")).count("\n") == 9, "it summarises each course of action and writes a row per run")
+	for f in DirAccess.get_files_at(stu.dir):
+		DirAccess.remove_absolute(stu.dir.path_join(f))
+	DirAccess.remove_absolute(stu.dir)
+
 	# 12. Real time. A scenario may compress its story (CLOSE PASS: weeks into
 	# days, by shorter holds and quicker hops paid for in real Δv); the clock and
 	# the physics never are: one sim second is one second of UTC and of orbit.
