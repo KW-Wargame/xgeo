@@ -15,12 +15,13 @@
 ##   --truth=false     also report Red's and neutrals' true states
 ## Lines: {"type":"start",...}, then per step {"type":"step",...} with every
 ## log entry since the last step, Blue's ships and Blue's tracks (the belief,
-## with its 1σ ellipse); a final {"type":"end",...} with the debrief. Each
+## with its 1σ ellipse, carried forward to the line's own t); a final {"type":"end",...} with the debrief. Each
 ## order given adds {"type":"order",...} with whether it was carried out.
 ## A course of action is a JSON file {"orders": [...]}: burn, intercept, match,
 ## effect, buoy, analyse, radar, each at its time (core/orders.gd lists them).
 ## t is seconds from the start; the run stops at each order's time to give it.
-## Units: km, km/s, s; positions are Jupiter-centred, in the game's plane.
+## Units: km, km/s, s; positions are centred on the scenario's central body
+## (the Earth, in Close Pass), on axes that do not turn with it.
 ## Nothing here touches ui/ or scenes/: it is Core alone, as the tests run it.
 extends SceneTree
 
@@ -83,9 +84,12 @@ func _snapshot(sim: Sim, new_log: Array, truth: bool) -> Dictionary:
 	var tracks := []
 	for id in sim.tracks:
 		var tr: Track = sim.tracks[id]
-		var e := tr.ellipse()
+		# The estimate stands at its last look; coast it to now, as the map does,
+		# so it lines up with the ships beside it.
+		var now := tr.forecast(sim.t) if tr.t < sim.t else tr
+		var e := now.ellipse()
 		var d := {"label": tr.label, "ident": tr.ident, "side": tr.side, "class": tr.class_id, "in_contact": tr.in_contact,
-			"last_seen": tr.last_seen, "r": _v(tr.pos()), "v": _v(tr.vel()),
+			"last_seen": tr.last_seen, "r": _v(now.pos()), "v": _v(now.vel()),
 			"sigma_km": {"major": e.major, "minor": e.minor, "angle": e.angle}}
 		if truth:
 			d.truth = id
