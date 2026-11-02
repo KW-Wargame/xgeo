@@ -882,10 +882,94 @@ func _radar(t: float) -> void:
 			tr.how = "RADAR"
 
 
+## When the ground radars measure between the looks: [t, site id] pairs, in
+## time order, up to planned_to (plan_fixes). Sim.advance stops on each.
+var fixes: Array = []
+var planned_to := -INF
+const PASS_SCAN := 60.0 # s between the samples that find the passes
+
+
+## A ground radar measures every cadence_s (its radar block's; 10 s if none)
+## while something stands in its view, not only at the looks: a LEO pass lasts
+## a few minutes, often all between two looks. This finds the minutes when
+## anything not Blue's might be in a site's view between t0 and t1 (Kepler
+## orbits sampled each PASS_SCAN s on an absolute grid, with a margin of 15° of
+## elevation and 20% of reach, so a pass is never missed between samples) and
+## lists the fixes due in them, on the cadence's absolute grid and strictly
+## inside (t0, t1): the look at t1 makes its own. Whether each fix happens is
+## then decided on the true state at its moment (_site_radar).
+func plan_fixes(t0: float, t1: float) -> void:
+	fixes = fixes.filter(func(f): return f[0] > t0 + 1e-6)
+	var sites := []
+	for o in sim.blue_ships():
+		if o.alive and o.get("kind", "") == "site" and o.cls.has("radar"):
+			sites.append(o)
+	planned_to = t1
+	if sites.is_empty():
+		return
+	var objs := []
+	for x in sim.ships:
+		if x.side != "blue" and x.alive and x.has("r") and not x.has("ground") and not x.has("onMoon"):
+			objs.append(x)
+	if objs.is_empty():
+		return
+	var k0 := floori(t0 / PASS_SCAN)
+	var k1 := ceili(t1 / PASS_SCAN)
+	var active := {} # site id -> {sample index: true}
+	for k in range(k0, k1 + 1):
+		var ts := k * PASS_SCAN
+		var at := []
+		for x in objs:
+			at.append(Kepler.propagate(x.r, x.v, ts - sim.t, sim.mu)[0])
+		for o in sites:
+			var rd: Dictionary = o.cls.radar
+			var min_el := deg_to_rad(float(rd.get("min_el_deg", o.cls.get("min_el_deg", 0.0))) - 15.0)
+			var reach := 1.2 * float(rd.get("max_range_km", o.cls.get("max_range_km", INF)))
+			var g: PackedFloat64Array = sim.ground_state(o.ground, ts)[0]
+			var up := V.scale(g, 1.0 / V.norm(g))
+			for p in at:
+				var d := V.sub(p, g)
+				var R := V.norm(d)
+				if R <= reach and asin(clampf(V.dot(d, up) / R, -1.0, 1.0)) >= min_el:
+					if not active.has(o.id):
+						active[o.id] = {}
+					active[o.id][k - 1] = true
+					active[o.id][k] = true
+					break
+	var due := []
+	for o in sites:
+		if not active.has(o.id):
+			continue
+		var cad := maxf(1.0, float(o.cls.radar.get("cadence_s", 10.0)))
+		for k in active[o.id]:
+			var a := maxf(k * PASS_SCAN, t0)
+			var b := minf((k + 1) * PASS_SCAN, t1)
+			var n := floori(a / cad + 1e-9) + 1 # (a, b], short of t1
+			while n * cad <= b + 1e-6 and n * cad < t1 - 1e-6:
+				due.append([n * cad, o.id])
+				n += 1
+	due.sort_custom(func(p, q): return p[0] < q[0] or (p[0] == q[0] and String(p[1]) < String(q[1])))
+	fixes.append_array(due)
+
+
+## The moment of the next ground-radar fix, or INF.
+func next_fix() -> float:
+	return float(fixes[0][0]) if not fixes.is_empty() else INF
+
+
+## The ground radars' fixes due by now (each site's own, as at a look).
+func run_fixes() -> void:
+	while not fixes.is_empty() and float(fixes[0][0]) <= sim.t + 1e-6:
+		var f: Array = fixes.pop_front()
+		var o: Dictionary = sim.by_id.get(String(f[1]), {})
+		if not o.is_empty() and o.alive:
+			_site_radar(o, sim.t)
+
+
 ## A ground site's radar (kind "site", on the turning Earth): always on, one
-## measurement per look of every object not Blue's that stands above its
-## elevation mask, measured from the local vertical (the site's direction
-## from the centre), and inside its reach.
+## measurement at every look and at every fix plan_fixes lists, of every
+## object not Blue's that stands above its elevation mask, measured from the
+## local vertical (the site's direction from the centre), and inside its reach.
 ## - A site radar given by its measured accuracy ("site": true; the
 ##   operators' published figures: PFISR, LeoLabs, Space Fence) sees whatever is inside
 ##   max_range_km, with range to sigma_range_km and both angles to
@@ -938,7 +1022,10 @@ func _site_radar(o: Dictionary, t: float) -> void:
 		else:
 			tr.predict(t)
 			tr.update_fix(o.r, rm, u, sr, sa)
-		tr.lobs.append({"t": t, "from": o.r, "bearing": atan2(u[1], u[0]), "dir": u, "kind": "radar", "by": o.id, "range": R})
+		# Drawn once a minute a site at most: every fix is used, but 60 lines a look is clutter.
+		var drawn := tr.lobs.filter(func(l): return l.by == o.id and t - float(l.t) < PASS_SCAN - 1e-6)
+		if drawn.is_empty():
+			tr.lobs.append({"t": t, "from": o.r, "bearing": atan2(u[1], u[0]), "dir": u, "kind": "radar", "by": o.id, "range": R})
 		tr.mark_seen(t)
 		tr.in_contact = true
 		tr.how = "RADAR"

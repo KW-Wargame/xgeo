@@ -9,7 +9,7 @@ node tools/verify.mjs -k moons     # extra arguments go to pytest
 
 The first run creates `tools/verify/.venv` from `tools/verify/requirements.txt` (it needs Python 3.12 or later; on Windows, `winget install -e --id Python.Python.3.12`). Every later run works offline: JPL data is cached in `tools/verify/fixtures/`. The full table is written to `tools/verify/out/results.md` and `results.json`.
 
-Result on 26 Oct 2026 (Godot 4.7.2), in the full repository: **762 of 762 comparisons within tolerance, 63 tests passed**, plus 4 INFO rows for known simplifications. On xGEO Core alone (the published folder, with no scenario file): **550 of 550 within tolerance, 57 tests passed**, 2 INFO rows; the 6 tests of the effects (jammer, uplink turnaround, pointing, laser, HPM, kill probability) skip there, because their parameters come from a scenario file. On 25 Oct 2026: 762 of 762, 63 tests. (On 23 Oct 2026: 359 of 359, 51 tests, 16 INFO.)
+Result on 2 Nov 2026 (Godot 4.7.2), in the full repository: **681 of 681 comparisons within tolerance, 64 tests passed**, plus 4 INFO rows for known simplifications. On 26 Oct 2026: 762 of 762, 63 tests; on xGEO Core alone (the published folder, with no scenario file) then: 550 of 550 within tolerance, 57 tests passed, 2 INFO rows; the 6 tests of the effects (jammer, uplink turnaround, pointing, laser, HPM, kill probability) skip there, because their parameters come from a scenario file. On 25 Oct 2026: 762 of 762, 63 tests. (On 23 Oct 2026: 359 of 359, 51 tests, 16 INFO.)
 
 ## How it works
 

@@ -39,7 +39,7 @@ static func state_of(sim: Sim) -> Dictionary:
 	var tracks := {}
 	for id in sim.tracks:
 		var tr: Track = sim.tracks[id]
-		tracks[id] = {"label": tr.label, "x": tr.x, "P": tr.P, "t": tr.t, "ident": tr.ident, "class_id": tr.class_id, "side": tr.side, "last_seen": tr.last_seen, "in_contact": tr.in_contact, "intercepts": tr.intercepts, "lkp": tr.lkp, "lkp_t": tr.lkp_t, "burn": tr.burn, "ranged_at": tr.ranged_at}
+		tracks[id] = {"label": tr.label, "x": tr.x, "P": tr.P, "t": tr.t, "ident": tr.ident, "class_id": tr.class_id, "side": tr.side, "last_seen": tr.last_seen, "in_contact": tr.in_contact, "intercepts": tr.intercepts, "lkp": tr.lkp, "lkp_t": tr.lkp_t, "burn": tr.burn, "ranged_at": tr.ranged_at, "range_info": tr.range_info, "burned": tr.burned}
 	var state := {"t": sim.t, "next_look": sim.next_look, "escalation": sim.escalation, "ships": ships, "tracks": tracks, "track_n": sim.track_n,
 		"intercepts": sim.intercepts, "log": sim.log, "debris": sim.debris, "scheduled": sim.scheduled, "seed": sim.master_seed, "run": sim.run, "rng": sim.stream_states(),
 		"jamming": sim.effects.jamming, "kvs": sim.effects.kvs, "radar": sim.effects.radar_on, "found": sim.campaign.found, "measures": sim.campaign.measures(), "pending": sim.sensing.pending,
@@ -90,7 +90,7 @@ static func apply(sim: Sim, state_in: Dictionary) -> void:
 	for id in state.tracks:
 		var s: Dictionary = state.tracks[id]
 		var tr := Track.new(id, s.label, s.x, s.P, s.t)
-		for k in ["ident", "class_id", "side", "last_seen", "in_contact", "intercepts", "lkp_t", "burn", "ranged_at"]:
+		for k in ["ident", "class_id", "side", "last_seen", "in_contact", "intercepts", "lkp_t", "burn", "ranged_at", "range_info", "burned"]:
 			tr.set(k, s.get(k, tr.get(k)))
 		tr.lkp = PackedFloat64Array(s.get("lkp", tr.pos()))
 		sim.tracks[id] = tr

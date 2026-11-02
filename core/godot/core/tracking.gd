@@ -69,6 +69,18 @@ const BURN_GUESS := 0.005
 ## sized, dv (km/s), sigma (km/s, 1σ of each component)}; {} if none.
 var burn := {}
 var ranged_at := -INF
+## What the ranges measured since the last burn tell: the sum of their 1/σ²
+## (1/km²). Angles alone cannot tell the range of a craft in nearly the same
+## orbit (Woffinden & Geller 2009), so after a burn (seen, or shown by a
+## sighting) only ranges can; yet the filter, its velocity now off, goes on
+## claiming the range it had. So from the first burn on, the estimate claims
+## no better along the line of sight than those ranges together
+## (range_floor): a telescope ranging a hull by its size at 30 km (σ ~1.5 km
+## a look) leaves a track of 1.5 km, then 1.1, 0.9..., not the 0.1 km the
+## filter made of it while the truth sat 2 km off; one radar fix (14 m)
+## settles it.
+var range_info := 0.0
+var burned := false # a burn has been seen or shown since the track began
 var accel_noise := 6e-7 # km/s²: small unseen pushes and what the model leaves out (tuned on the retired NIGHT HERON campaign test, when the covariance still moved two-body)
 ## A 3-D track's accel_noise² weighted by direction in its orbit's own axes:
 ## (radial, along the track, across it). ONE, the default, is the same on
@@ -589,6 +601,8 @@ func update_dir(s: PackedFloat64Array, u: PackedFloat64Array, sigma: float, tm :
 			_update_linear(H, -cross, sigma * sigma * rng * rng, e if unranged else PackedFloat64Array())
 		if unranged:
 			_floor_along(s, RANGE_FLOOR * rng)
+		else:
+			_floor_along(s, range_floor())
 		return
 	for e in ee:
 		var h := func(p):
@@ -596,6 +610,19 @@ func update_dir(s: PackedFloat64Array, u: PackedFloat64Array, sigma: float, tm :
 			var dd := V.of(q[0] - s[0], q[1] - s[1], q[2] - s[2])
 			return atan2(V.dot(dd, e), V.dot(dd, u))
 		_update(0.0, h, sigma * sigma, true)
+	_floor_along(s, range_floor())
+
+
+## The least 1σ (km) along the line of sight: what the ranges since the last
+## burn tell together (range_info); 0 before any burn, or with no range since.
+func range_floor() -> float:
+	return 1.0 / sqrt(range_info) if burned and range_info > 0.0 else 0.0
+
+
+## A burn (seen or shown): the ranges before it no longer tell where it is.
+func _burned() -> void:
+	burned = true
+	range_info = 0.0
 
 
 ## The normalised innovation squared of a direction u taken from s (two
@@ -670,6 +697,7 @@ func cross_sigma(s: PackedFloat64Array) -> float:
 
 func update_range(s: PackedFloat64Array, rng: float, sigma: float) -> void:
 	ranged_at = t
+	range_info += 1.0 / (sigma * sigma)
 	if dims() == 3:
 		_update(rng, func(p): return sqrt((p[0] - s[0]) * (p[0] - s[0]) + (p[1] - s[1]) * (p[1] - s[1]) + (p[2] - s[2]) * (p[2] - s[2])), sigma * sigma, false)
 		return
@@ -704,6 +732,7 @@ const MANEUVER_GATE_3 := 16.27
 
 func update_fix(s: PackedFloat64Array, rng: float, u: PackedFloat64Array, sigma_r: float, sigma_a: float) -> void:
 	ranged_at = t
+	range_info += 1.0 / (sigma_r * sigma_r)
 	var z := V.add(s, V.scale(u, rng))
 	var ca := (sigma_a * rng) ** 2
 	var R := [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
@@ -750,6 +779,7 @@ func update_fix(s: PackedFloat64Array, rng: float, u: PackedFloat64Array, sigma_
 				for a in 3:
 					for b in 3:
 						P[i][j] += K[i][a] * R[a][b] * K[j][b]
+		_floor_along3(s, range_floor())
 		_size_burn()
 		return
 
@@ -774,6 +804,7 @@ func _nis_fix(z: PackedFloat64Array, R: Array) -> float:
 ## An unseen burn: widen by the smallest of BURN_SIZES that brings the
 ## sighting (its nis()) inside the gate, as a jump any time since the last sighting.
 func _size_unseen(nis: Callable, gate: float) -> void:
+	_burned()
 	var since := maxf(MANEUVER_SINCE, t - last_seen)
 	var P0 := P.map(func(r): return r.duplicate())
 	for dv in BURN_SIZES:
@@ -789,6 +820,7 @@ func _size_unseen(nis: Callable, gate: float) -> void:
 func burn_seen(n: int, at: float, most: float) -> void:
 	var since := maxf(t - at, 1.0)
 	burn = {"n": n, "at": at, "x0": x.duplicate(), "t0": t, "sized": false}
+	_burned()
 	maneuver_seen(since, minf(BURN_GUESS, most))
 
 

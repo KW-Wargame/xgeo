@@ -168,7 +168,8 @@ These three blocks are used by `data/scenarios/close_pass_earth.json`.
   site's class may carry a `radar` block {`site`: true, `sigma_range_km`,
   `sigma_angle_deg`, `min_el_deg`, `max_range_km`, `cadence_s`}. The radar
   measures range and two angles for any non-Blue object above its elevation
-  mask and within its reach.
+  mask and within its reach, every `cadence_s` (10 s if absent) all through
+  each pass, between the sensor looks too.
 - `view`: {`actor`, `focus`, `select`, `dist`, `pitch`}. These set the craft
   the player starts in, the craft the camera looks at, what is selected at
   first, and the camera's distance and tilt.

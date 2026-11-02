@@ -5,10 +5,11 @@
 ##   track started there is 6-state.
 ## - A Red craft on ICEYE-X36's orbit (inclined 97.85°), in the public
 ##   catalogue, starts with a 6-state track at its catalogue accuracy. Over a
-##   day of looks, ground radars (PFISR, LeoLabs Midland) see it only above
-##   their elevation masks; the track stays consistent with the truth (its
-##   NEES, the normalised estimation error squared, near its 6 degrees of
-##   freedom; Bar-Shalom, Li & Kirubarajan 2001, §5.4), and each radar pass
+##   day, ground radars (PFISR, LeoLabs Midland) measure it every 10 s of
+##   each pass, between the looks too, and only above their elevation masks;
+##   the track stays consistent with the truth at the looks (its NEES, the
+##   normalised estimation error squared, near its 6 degrees of freedom;
+##   Bar-Shalom, Li & Kirubarajan 2001, §5.4), and each pass's first fix
 ##   tightens it.
 ## - The process noise weighted by direction (Track.noise_axes) lands in the
 ##   orbit's radial, along-track and cross-track axes.
@@ -115,12 +116,38 @@ func _init() -> void:
 	var worst_ratio := 0.0
 	var sum_p := 0.0
 	var last_p := 0.0
+	var fixes := 0
+	var last_fix := -INF
 	while sim.t < Sim.DAY - 1.0:
-		var before: float = tr.forecast(sim.t + Sim.LOOK).ellipse().major
-		sim.advance(Sim.LOOK)
+		# To the next radar fix or the next look, whichever comes first.
+		if sim.sensing.planned_to < sim.next_look - 1e-6:
+			sim.sensing.plan_fixes(sim.t, sim.next_look)
+		var dt := minf(sim.next_look, sim.sensing.next_fix()) - sim.t
+		var before: float = tr.forecast(sim.t + dt).ellipse().major
+		var ranged := tr.ranged_at
+		sim.advance(dt)
 		tr = sim.tracks.get("r1")
 		if tr == null:
 			break
+		if tr.ranged_at > ranged: # a radar fix now: above some site's mask
+			fixes += 1
+			var above := false
+			for s in sim.ships:
+				if masks.has(s.id):
+					var up := V.scale(s.r, 1.0 / V.norm(s.r))
+					if asin(V.dot(V.sub(x.r, s.r), up) / V.dist(x.r, s.r)) >= masks[s.id] - 1e-9 and V.dist(x.r, s.r) <= float(s.cls.radar.max_range_km):
+						above = true
+			if not above:
+				below_mask += 1
+			if sim.t - last_fix > 60.0: # a pass's first fix
+				passes += 1
+				var after: float = tr.ellipse().major
+				worst_ratio = maxf(worst_ratio, after / before)
+				if after < 0.7 * before:
+					tight += 1
+			last_fix = sim.t
+		if absf(sim.t - (sim.next_look - Sim.LOOK)) > 1e-6:
+			continue # the rest at the looks
 		var e := PackedFloat64Array()
 		for i in 3:
 			e.append(tr.x[i] - x.r[i])
@@ -134,31 +161,18 @@ func _init() -> void:
 		var qp := nees(e.slice(0, 3), tr.P)
 		sum_p += qp
 		last_p = qp
-		var radar_now := false
-		for l in tr.lobs:
-			if l.kind == "radar" and absf(float(l.t) - sim.t) < 1.0:
-				radar_now = true
-				var site: Dictionary = sim.by_id[l.by]
-				var up := V.scale(site.r, 1.0 / V.norm(site.r))
-				var el := asin(V.dot(V.sub(x.r, site.r), up) / V.dist(x.r, site.r))
-				if el < masks[l.by] - 1e-9:
-					below_mask += 1
-		if radar_now:
-			passes += 1
-			var after: float = tr.ellipse().major
-			worst_ratio = maxf(worst_ratio, after / before)
-			if after < 0.7 * before:
-				tight += 1
 	_check(tr != null and n >= 143, "the track is held all day (%d looks)" % n)
-	# One measurement a look (600 s) per site: a pass above PFISR's 45° or
-	# Midland's 30° lasts minutes, so a day catches few.
-	_check(passes >= 1 and below_mask == 0, "the radars saw it on %d looks, never below their elevation masks" % passes)
+	# A pass above PFISR's 45° or Midland's 30° lasts minutes: a fix every 10 s of it.
+	_check(passes >= 1 and fixes >= 6 * passes and below_mask == 0, "the radars measured it %d times in %d passes, never below their elevation masks" % [fixes, passes])
 	var mean := sum / maxf(1.0, n)
 	var mean_p := sum_p / maxf(1.0, n)
-	_check(mean > 2.0 and mean < 12.0 and mean_p > 1.0 and mean_p < 6.0 and high <= n / 20,
+	# Never overconfident. It may be cautious: its process noise (Track.accel_noise)
+	# allows for pushes the model leaves out, and this truth feels none, so with
+	# a fix every 10 s of each pass the errors run well inside the 1σ.
+	_check(mean > 0.3 and mean < 12.0 and mean_p > 0.15 and mean_p < 6.0 and high <= n / 20,
 		"consistent: mean NEES %.2f (6 expected), position alone %.2f (3 expected), over %d looks; %d past the χ²(6) 99.9%% point" % [mean, mean_p, n, high])
 	_check(passes > 0 and tight == passes and worst_ratio < 0.2,
-		"each radar look tightens it: the 1σ after over before at worst %.3f" % worst_ratio)
+		"each pass's first fix tightens it: the 1σ after over before at worst %.3f" % worst_ratio)
 	if tr != null:
 		_check(last_p < 16.27, "after a day: %.1f km off the truth with 1σ %.1f km (position NEES %.2f)" % [V.dist(tr.pos(), x.r), tr.ellipse().major, last_p])
 

@@ -4,8 +4,9 @@
 ## the Jupiter shadowing the tests keep (tests/fixtures/jupiter_shadow.json).
 ## What the shadowing objectives measure, at every look (Sim.LOOK):
 ## - keep_out: the shadowing craft's closest to its target (km, at the looks);
-## - custody: the share of the time our track on it was good (1σ under
-##   camp.custody_km);
+## - custody: the share of the time our track on it was good: its 1σ under
+##   camp.custody_km (Blue believes it) and the estimate truly that close
+##   (it is so), both at the moment of the look;
 ## - fuel: the share of the acting craft's Δv used.
 ## The score (camp.score: weights out of 100) gives each objective its share
 ## by how well it went, not just done or failed (score()).
@@ -140,7 +141,11 @@ func _measure() -> void:
 		return
 	watched_s += Sim.LOOK
 	var tr: Track = sim.tracks.get(sh.id)
-	if tr != null and float(tr.ellipse().major) < float(sim.camp.get("custody_km", 1.0)):
+	if tr == null:
+		return
+	var now := tr.forecast(sim.t) if tr.t < sim.t else tr # the track at this moment, not at its last fix
+	var lim := float(sim.camp.get("custody_km", 1.0))
+	if float(now.ellipse().major) < lim and V.dist(now.pos(), sh.r) < lim:
 		custody_s += Sim.LOOK
 
 

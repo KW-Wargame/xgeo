@@ -443,6 +443,10 @@ func advance(dt: float) -> void:
 		if h <= 1e-9:
 			h = minf(dt, LOOK)
 		h = minf(h, effects.max_step()) # fine steps while a kill vehicle homes
+		if sensing.planned_to < next_look - 1e-6: # the ground radars' fixes before the next look
+			sensing.plan_fixes(t, next_look)
+		if sensing.next_fix() - t > 1e-9:
+			h = minf(h, sensing.next_fix() - t)
 		for b in scheduled: # stop on a planned burn's moment: flown late, it is another burn
 			if float(b.at) - t > 1e-6:
 				h = minf(h, float(b.at) - t)
@@ -469,6 +473,7 @@ func advance(dt: float) -> void:
 					continue
 				var plan := plan_to(b.id, pocket_center(pocket(tgt.substr(7)), t + b.tof), b.tof, 0.0, tgt) if tgt.begins_with("pocket:") else (plan_planet(b.id, tgt.substr(7), b.tof, b.get("arr", {})) if tgt.begins_with("planet:") else plan_intercept(b.id, tgt, b.tof))
 				execute(plan)
+		sensing.run_fixes()
 		if t >= next_look - 1e-6:
 			thermal.step(LOOK)
 			sensing.look()
