@@ -4,188 +4,180 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>xGEO Live · Operator's Handbook</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
 <style>
-@page{size:8.5in 11in;margin:0}
-:root{--paper:#121315;--panel:#1a1c1f;--panel2:#202327;--ink:#efeeea;--ink2:#c3c5c9;--ink3:#8b9096;--rule:#2c2f34;--orange:#ec6a34;--orange2:#ff8a5c;
-  --own:#80a8d6;--prot:#9fd0a0;--unk:#dcbc56;--host:#e8544a;
-  --cond:'Barlow Condensed','Arial Narrow',sans-serif;--body:'Barlow','Segoe UI',sans-serif}
+/* xGEO Live Operator's Handbook: a printed game manual.
+   White pages, serif text, numbered sections, captioned screenshots. */
+:root{
+  --ink:#1c1d1f;--ink2:#3a3c40;--ink3:#6c7076;--rule:#c9ccd1;--rule2:#e3e5e8;--tint:#f2f3f5;
+  --head:#1f4e6e;--orange:#d9561f;
+  --own:#2f6aa8;--prot:#3d8a46;--unk:#a77f12;--host:#c4362c;
+  --serif:'Source Serif 4','Georgia',serif;
+  --cond:'Barlow Condensed','Arial Narrow',sans-serif;
+  --sans:'Barlow','Segoe UI',sans-serif}
+@page{size:8.5in 11in;margin:.85in .8in .85in .9in;
+  @bottom-center{content:counter(page);font:600 9pt 'Barlow Condensed',sans-serif;letter-spacing:.12em;color:#6c7076}}
+@page :left{margin-left:.8in;margin-right:.9in;
+  @top-left{content:"xGEO LIVE  ·  OPERATOR'S HANDBOOK";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}
+  @top-right{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page cover{margin:0;@bottom-center{content:none}@top-left{content:none;border:0}@top-right{content:none;border:0}}
+@page front{@top-left{content:none;border:0}@top-right{content:none;border:0}}
+
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--paper);color:var(--ink);font:400 10.5pt/1.5 var(--body);-webkit-print-color-adjust:exact;print-color-adjust:exact}
-@media screen{body{background:#060607}.pg{margin:24px auto;box-shadow:0 4px 24px rgba(0,0,0,.4)}}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#fff;color:var(--ink);font:400 10.4pt/1.5 var(--serif);font-optical-sizing:auto;hyphens:auto}
 img{display:block;max-width:100%}
-p{margin:0 0 9px;color:var(--ink2)}
-p b,li b,td b{color:var(--ink);font-weight:600}
-.pg{position:relative;width:8.5in;height:11in;padding:.6in .62in .8in;overflow:hidden;background:var(--paper);page-break-after:always;break-after:page;display:flex;flex-direction:column}
-.pg:last-child{page-break-after:auto;break-after:auto}
-.foot{position:absolute;left:.62in;right:.62in;bottom:.34in;display:flex;justify-content:space-between;font:600 8pt var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
-.foot span:last-child{color:var(--ink2)}
+p{margin:0 0 .62em;text-align:justify;orphans:3;widows:3}
+b,strong{font-weight:650}
+a{color:inherit;text-decoration:none}
 
-/* page head */
-.kick{font:600 9pt var(--cond);letter-spacing:.24em;text-transform:uppercase;color:var(--orange)}
-h1{margin:4px 0 8px;font:700 34pt/.95 var(--cond);letter-spacing:.01em;text-transform:uppercase}
-.lede{margin:0 0 .24in;font-size:12.5pt;line-height:1.45;color:var(--ink2);max-width:6.6in}
-h2{margin:0 0 7px;font:700 13pt/1.1 var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink)}
-h3{margin:0 0 3px;font:700 11pt/1.15 var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
-.blk{margin-bottom:.22in}
-.grow{flex:1}
+/* chapters */
+.chap{break-before:page}
+.chap-head{margin:0 0 .2in;padding-bottom:.12in;border-bottom:2pt solid var(--head)}
+.chap-head .no{font:700 11pt var(--cond);letter-spacing:.24em;text-transform:uppercase;color:var(--orange)}
+.chap-head h1{margin:2pt 0 0;font:700 30pt/1 var(--cond);letter-spacing:.03em;text-transform:uppercase;color:var(--head)}
+.intro{font-size:11.6pt;line-height:1.5;font-style:italic;color:var(--ink2);text-align:left;margin-bottom:1.1em}
+h2{margin:1.5em 0 .5em;font:700 14pt/1.15 var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--head);break-after:avoid}
+h2 .n{color:var(--orange);margin-right:.45em}
+h3{margin:1.2em 0 .35em;font:700 11pt/1.2 var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink);break-after:avoid}
+h3 .n{color:var(--head);margin-right:.45em}
+h2+h3{margin-top:.6em}
+.chap-head+h2,.intro+h2{margin-top:.4em}
 
-/* layout */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:.18in .3in}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.16in .2in}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.14in}
-.gL{display:grid;grid-template-columns:1.35fr 1fr;gap:.3in;align-items:start}
-.gR{display:grid;grid-template-columns:1fr 1.35fr;gap:.3in;align-items:start}
-.end{align-items:end}
+/* labels and keys */
+.q{font:600 .82em var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+kbd{display:inline-block;min-width:1.55em;padding:0 .38em;border:1px solid #a9adb3;border-bottom-width:2px;border-radius:3px;background:#fafafa;font:600 .8em/1.45 var(--sans);text-align:center;white-space:nowrap;vertical-align:.08em}
+
+/* lists */
+ul,ol{margin:0 0 .75em;padding-left:1.35em}
+li{margin:0 0 .28em;text-align:left}
+li::marker{color:var(--head);font-weight:700}
+ol.steps{list-style:none;padding:0;counter-reset:st}
+ol.steps>li{counter-increment:st;position:relative;padding-left:2.1em;margin-bottom:.5em}
+ol.steps>li::before{content:counter(st);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;background:var(--head);color:#fff;font:700 9pt/1.45em var(--cond);text-align:center}
 
 /* figures */
-.fig{margin:0}
-.fig img{width:100%;border:1px solid var(--rule);border-radius:5px;background:#000}
-.cap{margin-top:6px;font-size:9pt;line-height:1.4;color:var(--ink3)}
-.cap b{color:var(--ink2)}
-.fig.nb img{border:0;background:none}
+figure{margin:.9em 0 1.1em;break-inside:avoid}
+figure img{width:100%;border:1px solid #9ea3aa;background:#000}
+figcaption{margin-top:5px;font:italic 400 9pt/1.4 var(--sans);color:var(--ink3);text-align:left}
+figcaption b{font-style:normal;font-weight:600;color:var(--ink2);margin-right:.35em}
+figure.r{float:right;width:44%;margin:.2em 0 .7em 1.6em}
+figure.l{float:left;width:44%;margin:.2em 1.6em .7em 0}
+figure.r.s,figure.l.s{width:36%}
+figure.mid{width:72%;margin-left:auto;margin-right:auto}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:.22in;margin:.9em 0 1.1em;break-inside:avoid}
+.pair figure{margin:0}
+.clear{clear:both}
 
-/* cards */
-.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:12px 14px}
-.card p{margin:3px 0 0;font-size:10pt;line-height:1.45}
-.card .ic{width:34px;height:34px;margin-bottom:8px;opacity:.95}
-.card.o{border-top:3px solid var(--orange)}
-.card.b{border-top:3px solid var(--own)}
-.card.r{border-top:3px solid var(--host)}
-.card.g{border-top:3px solid var(--prot)}
-.card.y{border-top:3px solid var(--unk)}
-.tag{display:inline-block;font:700 8pt var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}
+/* annotated screenshot */
+.anno{position:relative}
+.pin{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:var(--orange);color:#fff;border:2px solid #fff;font:700 9pt/16px var(--cond);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+ol.legend{list-style:none;padding:0;columns:2;column-gap:.3in;counter-reset:lg}
+ol.legend li{counter-increment:lg;position:relative;padding-left:1.8em;break-inside:avoid;margin-bottom:.45em}
+ol.legend li::before{content:counter(lg);position:absolute;left:0;top:.1em;width:1.3em;height:1.3em;border-radius:50%;background:var(--orange);color:#fff;font:700 8.5pt/1.3em var(--cond);text-align:center}
 
-/* numbered steps */
-.steps{display:flex;flex-direction:column;gap:12px}
-.st{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start}
-.st .n{width:28px;height:28px;border-radius:50%;background:var(--orange);color:#fff;font:700 13pt/28px var(--cond);text-align:center}
-.st p{margin:2px 0 0;font-size:10.3pt}
-.do{display:inline-block;margin-top:4px;font:600 8.8pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--orange2)}
-/* walkthrough rows: number, text, picture */
-.wk{display:flex;flex-direction:column;gap:.17in}
-.wr{display:grid;grid-template-columns:32px 1fr 2.55in;gap:14px;align-items:start;padding-bottom:.17in;border-bottom:1px solid var(--rule)}
-.wr:last-child{border-bottom:0;padding-bottom:0}
-.wr .n{width:28px;height:28px;border-radius:50%;background:var(--orange);color:#fff;font:700 13pt/28px var(--cond);text-align:center}
-.wr p{margin:3px 0 0;font-size:10.2pt}
-.wr img{width:100%;border:1px solid var(--rule);border-radius:4px;max-height:1.45in;object-fit:cover;object-position:top left}
+/* boxes */
+.box{margin:1em 0 1.1em;padding:.7em .9em .55em;background:var(--tint);border-left:3pt solid var(--head);break-inside:avoid}
+.box>.l{display:block;margin-bottom:.2em;font:700 9pt var(--cond);letter-spacing:.18em;text-transform:uppercase;color:var(--head)}
+.box p{margin-bottom:.35em;text-align:left}
+.box.warn{border-left-color:var(--host)}.box.warn>.l{color:var(--host)}
+.box.tip{border-left-color:var(--orange)}.box.tip>.l{color:var(--orange)}
+.log{margin:1em 0;padding:.5em .9em;border:1px dashed var(--rule);font:500 9.6pt/1.45 var(--sans);color:var(--ink2);break-inside:avoid}
+.log .l{font:700 8.5pt var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-right:.6em}
 
-/* notes */
-.tip{background:var(--panel2);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:11px 15px;font-size:10.3pt;color:var(--ink2)}
-.tip .l{display:block;font:700 9pt var(--cond);letter-spacing:.2em;text-transform:uppercase;color:var(--orange);margin-bottom:2px}
-.tip.red{border-color:var(--host)}.tip.red .l{color:var(--host)}
-.tip.blue{border-color:var(--own)}.tip.blue .l{color:var(--own)}
-.say{display:grid;grid-template-columns:.7in 1fr;gap:14px;align-items:center;background:var(--panel2);border-left:3px solid var(--host);border-radius:0 6px 6px 0;padding:10px 15px}
-.say .l{font:700 9pt var(--cond);letter-spacing:.2em;text-transform:uppercase;color:var(--host)}
-.say p{margin:2px 0 0;font-size:11pt;font-style:italic;color:var(--ink)}
+/* tables */
+table{width:100%;border-collapse:collapse;margin:.6em 0 1.1em;font:400 9.6pt/1.4 var(--sans);break-inside:avoid}
+th{padding:5px 8px;background:var(--head);color:#fff;font:700 8.6pt var(--cond);letter-spacing:.12em;text-transform:uppercase;text-align:left}
+td{padding:5px 8px;border-bottom:1px solid var(--rule2);vertical-align:top;color:var(--ink2)}
+tr:nth-child(even) td{background:#f8f9fa}
+td:first-child{font-weight:600;color:var(--ink)}
+td.c,th.c{text-align:center}
+td.num{font:700 12pt var(--cond);color:var(--head);text-align:center;width:.6in}
+.must{display:inline-block;margin-left:.4em;padding:0 .35em;border:1px solid var(--host);border-radius:2px;font:700 7.4pt/1.5 var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--host);vertical-align:.1em}
+.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;margin-right:.45em;vertical-align:-.02em}
+.ic{width:34px;height:auto;display:inline-block;vertical-align:middle;margin-right:6px;filter:brightness(.2)}
 
-/* key-value rows */
-.kv{width:100%;border-collapse:collapse}
-.kv td{padding:7px 0;border-bottom:1px solid var(--rule);vertical-align:top;font-size:10.2pt;color:var(--ink2);line-height:1.4}
-.kv tr:last-child td{border-bottom:0}
-.kv td:first-child{width:36%;padding-right:12px;font:700 9.5pt/1.5 var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink)}
-.kv.w td:first-child{width:46%}
-.kv.n td:first-child{width:24%}
-.q{font:600 9pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:#0b0c0d;border:1px solid #33373c;border-radius:3px;padding:0 5px;white-space:nowrap}
-kbd{display:inline-block;min-width:1.65em;text-align:center;font:600 8.6pt/1 var(--body);color:var(--ink);background:#2b2e33;border:1px solid #4b5056;border-bottom-width:2px;border-radius:4px;padding:3px 5px 2px;white-space:nowrap;vertical-align:1px}
-
-/* big numbers and meters */
-.big{font:700 30pt/1 var(--cond);color:var(--orange)}
-.goal{display:grid;grid-template-columns:.7in 1fr;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rule)}
-.goal:last-child{border-bottom:0}
-.goal .pts{font:700 26pt/1 var(--cond);color:var(--ink);text-align:right}
-.goal .pts small{display:block;font:600 7.5pt var(--cond);letter-spacing:.16em;color:var(--ink3);margin-top:2px}
-.goal h3{font-size:11.5pt}
-.goal p{margin:2px 0 0;font-size:10pt}
-.must{color:var(--host);font:700 8pt var(--cond);letter-spacing:.14em;margin-left:6px}
-.meter{position:relative;height:16px;border-radius:3px;background:linear-gradient(90deg,#3a3d42 0 25%,#7b6326 25% 50%,#7a2a25 50% 100%)}
-.meter i{position:absolute;top:-5px;bottom:-5px;width:2px;background:#fff}
-.mlab{position:relative;height:30px;font:600 9pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
-.mlab span{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
-
-/* the opponent's plan */
-.plan{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr;align-items:stretch}
-.plan .s{background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--host);border-radius:6px;padding:10px 12px}
-.plan .s.end{border-top-color:var(--ink3)}
-.plan .s .tag{color:var(--host)}
-.plan .s h3{font-size:12pt}
-.plan .s p{margin:2px 0 0;font-size:9.6pt}
-.plan .a{display:flex;align-items:center;justify-content:center;color:var(--ink3);font:700 16pt var(--cond)}
+/* walkthrough steps */
+.step{margin:0 0 .7em;break-inside:avoid;display:grid;grid-template-columns:1fr 2.55in;gap:.25in;align-items:start;padding-bottom:.7em;border-bottom:1px solid var(--rule2)}
+.step:last-of-type{border-bottom:0}
+.step h3{margin-top:0}
+.step h3 .n{display:inline-block;width:1.55em;height:1.55em;margin-right:.5em;border-radius:50%;background:var(--orange);color:#fff;text-align:center;line-height:1.55em;letter-spacing:0}
+.step p{margin-bottom:.4em}
+.step .do{font:600 8.8pt var(--sans);color:var(--head)}
+.step .do::before{content:"DO  ›  ";font:700 8.4pt var(--cond);letter-spacing:.12em;color:var(--orange)}
+.step img{width:100%;border:1px solid #9ea3aa;background:#000;max-height:1.5in;object-fit:cover;object-position:top left}
 
 /* contents */
-.toc{display:grid;grid-template-columns:1fr 1fr;gap:0 .4in}
-.toc .part{grid-column:1/-1;margin:14px 0 4px;font:700 9pt var(--cond);letter-spacing:.24em;text-transform:uppercase;color:var(--orange);border-bottom:1px solid var(--rule);padding-bottom:4px}
-.toc a{display:flex;justify-content:space-between;gap:10px;padding:5px 0;color:var(--ink);text-decoration:none;font-size:10.8pt;border-bottom:1px dotted #2a2d31}
-.toc a span:last-child{font:700 10pt var(--cond);color:var(--ink3)}
-
-/* annotated screen */
-.anno{position:relative}
-.anno img{width:100%;border:1px solid var(--rule);border-radius:5px}
-.pin{position:absolute;transform:translate(-50%,-50%);width:.24in;height:.24in;border-radius:50%;background:var(--orange);color:#fff;font:700 9.5pt/.24in var(--cond);text-align:center;box-shadow:0 0 0 2px #fff}
-.legend{display:grid;grid-template-columns:1fr 1fr;gap:9px .3in;margin-top:.2in}
-.lg{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;font-size:10pt;color:var(--ink2);line-height:1.4}
-.lg .n{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;font:700 10pt/22px var(--cond);text-align:center}
-.lg b{display:block;font:700 10pt var(--cond);letter-spacing:.07em;text-transform:uppercase;color:var(--ink)}
-
-/* key list */
-.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;font-size:10.2pt;color:var(--ink2)}
-.keys>span:nth-child(odd){white-space:nowrap}
-
-/* time strip */
-.rates{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-.rates div{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:9px 10px;text-align:center}
-.rates b{display:block;font:700 17pt/1 var(--cond);color:var(--ink)}
-.rates small{display:block;margin-top:4px;font-size:8.8pt;color:var(--ink3);line-height:1.3}
-.rates em{display:block;margin-top:5px;font:600 8.4pt var(--cond);letter-spacing:.06em;text-transform:uppercase;font-style:normal;color:var(--orange2)}
-
-/* part openers */
-.opener{justify-content:flex-end;padding-bottom:1.2in}
-.opener .art{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.55}
-.opener .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,19,21,.1),rgba(18,19,21,.55) 45%,var(--paper) 88%)}
-.opener .num{position:relative;font:700 120pt/.8 var(--cond);color:var(--orange)}
-.opener h1{position:relative;font-size:46pt;margin-top:14px}
-.opener .lede{position:relative;font-size:13.5pt;max-width:5.4in}
-.opener ul{position:relative;margin:6px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px .3in;max-width:6in}
-.opener li{font:600 11pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-top:1px solid #3a3d42;padding-top:6px}
-.opener li span{color:var(--orange);margin-right:8px}
-
-/* cover */
-.cover{padding:0;color:#fff;background:#000}
-.cover .art{position:absolute;inset:0;background:url(img/keyart.jpg) 76% 40%/cover}
-.cover .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,0) 40%,rgba(0,0,0,.85) 78%,#000)}
-.cover .t{position:absolute;left:.62in;right:.62in;bottom:.7in}
-.cover .k{font:600 10pt var(--cond);letter-spacing:.3em;text-transform:uppercase;color:var(--orange2)}
-@font-face{font-family:'SatwarGeo';src:url(../fonts/SatwarGeo-Medium.ttf)}
-.cover h1{font:500 76pt/.85 'SatwarGeo',var(--cond);letter-spacing:.14em;text-transform:none;margin:8px 0 6px;color:#fff}
-.cover h2{margin:0 0 18px;font:600 20pt var(--cond);letter-spacing:.3em;text-transform:uppercase;color:#e6e6e6}
-.cover p{margin:0;font-size:11.5pt;color:#d6d6d6;max-width:4.8in}
-.cover .meta{margin-top:22px;font:600 8.5pt var(--cond);letter-spacing:.18em;text-transform:uppercase;color:#9a9a9a}
+.toc{columns:1}
+.toc .ch{display:flex;margin:.75em 0 .15em;font:700 11pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--head)}
+.toc .ch:first-child{margin-top:0}
+.toc a{display:flex;align-items:baseline;font:400 10pt/1.55 var(--sans);color:var(--ink2);padding-left:1.6em}
+.toc .ch a,.toc a.chl{padding-left:0;font:inherit;color:inherit;flex:1}
+.toc .t{white-space:nowrap}
+.toc .t i{font-style:normal;color:var(--ink3);display:inline-block;width:2.3em}
+.toc .dots{flex:1;margin:0 .4em;border-bottom:1px dotted #9ea3aa;transform:translateY(-.3em)}
+.toc .pg{font-weight:600;color:var(--ink)}
 
 /* glossary */
-.gl{columns:2;column-gap:.35in}
-.gl div{break-inside:avoid;padding:6px 0;border-bottom:1px solid var(--rule);font-size:9.8pt;color:var(--ink2);line-height:1.4}
-.gl b{display:block;font:700 10pt var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+dl.gl{columns:2;column-gap:.3in;margin:0}
+dl.gl div{break-inside:avoid;margin-bottom:.55em}
+dl.gl dt{font:700 9.6pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--head)}
+dl.gl dd{margin:0;font-size:9.8pt;line-height:1.4}
 
-.dl{position:fixed;top:14px;right:18px;z-index:5;font:600 10pt var(--cond);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--orange);padding:8px 14px;border-radius:4px;text-decoration:none}
+.two{columns:2;column-gap:.3in}
+.two>*{break-inside:avoid}
+.small{font-size:9pt;color:var(--ink3)}
+.faq h3{margin-top:.9em}
+
+/* cover */
+.cover{page:cover;position:relative;width:8.5in;height:11in;overflow:hidden;background:#000;color:#fff;break-after:page}
+.cover .art{position:absolute;inset:0;background:url(img/keyart.jpg) 76% 40%/cover}
+.cover .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,0) 40%,rgba(0,0,0,.85) 78%,#000)}
+.cover .t{position:absolute;left:.75in;right:.75in;bottom:.75in}
+.cover .k{font:600 10pt var(--cond);letter-spacing:.3em;text-transform:uppercase;color:#ff8a5c}
+@font-face{font-family:'SatwarGeo';src:url(../fonts/SatwarGeo-Medium.ttf)}
+.cover h1{font:500 76pt/.85 'SatwarGeo',var(--cond);letter-spacing:.14em;margin:8px 0 6px;color:#fff}
+.cover h2{margin:0 0 18px;font:600 20pt var(--cond);letter-spacing:.3em;text-transform:uppercase;color:#e6e6e6}
+.cover p{max-width:5.2in;font:400 12pt/1.5 var(--sans);color:#d6d6d6;text-align:left}
+.cover .meta{margin-top:14px;font:600 8.5pt var(--cond);letter-spacing:.2em;text-transform:uppercase;color:#8b9096}
+.front{page:front}
+
+/* on screen: the same book, as one long page */
+@media screen{
+  body{background:#e9eaec}
+  main{max-width:7.6in;margin:0 auto;padding:.5in .7in .8in;background:#fff;box-shadow:0 2px 18px rgba(0,0,0,.12)}
+  .cover{width:auto;height:min(11in,96vh);margin:0 -.7in .5in}
+  .chap{margin-top:.7in}
+  .dl{position:fixed;right:18px;top:14px;z-index:5;padding:8px 14px;background:var(--head);color:#fff;font:700 10pt var(--cond);letter-spacing:.12em;text-transform:uppercase;border-radius:3px}
+}
 @media print{.dl{display:none}}
-.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.small{font-size:9.2pt;color:var(--ink3)}
+@media screen and (max-width:700px){
+  main{padding:.3in 16px .6in}
+  .cover{margin:0 -16px .4in}
+  figure.r,figure.l{float:none;width:auto;margin:.9em 0}
+  .step{grid-template-columns:1fr}
+  .pair,ol.legend,dl.gl,.two{grid-template-columns:1fr;columns:1}
+}
 
-/* each page's body: its blocks spread evenly down the page */
-.bd{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:.2in;min-height:0}
-.bd>*{flex-shrink:0;margin-bottom:0}
-.bd>.fill{flex:1 0 auto;display:flex;flex-direction:column}
-.bd>.fill>.fill{flex:1}
-.grp>h2,.grp>h3{margin-bottom:8px}
-.grp>p{margin-top:8px}
-.stats{display:flex;gap:22px;margin-top:8px !important;font:600 8.6pt var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
-.stats b{color:var(--ink);margin-left:4px}
-.tips12 .card{padding:13px 16px}
+@page ch1:right{@top-right{content:"1 · INTRODUCTION";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch2:right{@top-right{content:"2 · THE MISSION";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch3:right{@top-right{content:"3 · GETTING STARTED";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch4:right{@top-right{content:"4 · YOUR FIRST GAME";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch5:right{@top-right{content:"5 · YOUR TOOLS";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch6:right{@top-right{content:"6 · PLAYING WELL";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch7:right{@top-right{content:"7 · THE DEBRIEF";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch8:right{@top-right{content:"8 · PHYSICS YOU'LL FEEL";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch9:right{@top-right{content:"9 · PROBLEMS AND ANSWERS";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page ch10:right{@top-right{content:"10 · FOR TINKERERS";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page chA:right{@top-right{content:"A · KEYS AND CHEAT SHEET";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page chB:right{@top-right{content:"B · GLOSSARY";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
+@page chC:right{@top-right{content:"C · THE TUTORIAL";font:600 8pt 'Barlow Condensed',sans-serif;letter-spacing:.2em;color:#6c7076;vertical-align:bottom;padding-bottom:6pt;border-bottom:.6pt solid #c9ccd1}@top-left{content:"";border-bottom:.6pt solid #c9ccd1}}
 </style>
 </head>
 <body>
 <a class="dl" download="" href="xGEO-Operators-Handbook.pdf">Download PDF</a>
-<section class="pg cover">
+<main>
+<div class="cover">
 <div class="art"></div>
 <div class="t">
 <div class="k">Operator's Handbook</div>
@@ -194,250 +186,145 @@ kbd{display:inline-block;min-width:1.65em;text-align:center;font:600 8.6pt/1 var
 <p>How to play CLOSE PASS: shadow a Russian inspector satellite in low Earth orbit and make it leave, with no weapons and without starting a war.</p>
 <div class="meta">Alpha 0.5 · Build 11 · Keyboard &amp; mouse</div>
 </div>
-</section>
-<section class="pg">
-<div class="kick">Welcome</div>
-<h1>Before you play</h1>
-<p class="lede">You fly one US inspector satellite. Another nation's inspector is creeping up on a satellite you protect. Your job is to make it leave, with no weapons and without starting a war.</p>
-
-
-
-
-<div class="bd"><div class="g2">
-<div>
-<h2>What kind of game this is</h2>
-<p>There are no lasers and no explosions. Satellites race round the Earth at nearly 8 km/s, but they meet and part slowly, a few metres a second at a time.</p>
-<p>Every move costs fuel you can never get back. Every look at the enemy depends on where the Sun is. Every radio burst you hear is worked out from real signal physics.</p>
-<p>You don't need to know orbital mechanics. The game does the maths and tells you the price. This book gives you the few rules of thumb that make you good at it.</p>
 </div>
-<div>
-<h2>How to read this book</h2>
-<div class="steps">
-<div class="st"><span class="n">1</span><div><h3>Read pages 4 to 9</h3><p>The mission, how you win, and how your opponent thinks. Ten minutes.</p></div></div>
-<div class="st"><span class="n">2</span><div><h3>Play with the tutorial on</h3><p>A new game teaches the controls in 24 short steps, one at a time.</p></div></div>
-<div class="st"><span class="n">3</span><div><h3>Follow the first game</h3><p>Part 2 walks you through a winning game, move by move.</p></div></div>
-<div class="st"><span class="n">4</span><div><h3>Keep the rest for later</h3><p>Part 3 explains each tool. Part 4 is the cheat sheet, tips and glossary.</p></div></div>
-</div>
-</div>
-</div><div class="grp"><h2>What you need</h2><div class="g4">
-<div class="card"><h3>A computer</h3><p>Desktop or laptop. Phones and touch screens aren't supported.</p></div>
-<div class="card"><h3>A browser</h3><p>Current Chrome, Edge or Firefox. The first load takes about a minute.</p></div>
-<div class="card"><h3>Mouse &amp; keys</h3><p>A scroll wheel for zooming. A middle button helps.</p></div>
-<div class="card"><h3>A big screen</h3><p>1920 × 1080 or more is best. <kbd>F11</kbd> for full screen.</p></div>
-</div></div><div class="tip"><span class="l">First click</span>Click inside the game once after it loads so it gets your keyboard. Until then some browsers keep <kbd>F1</kbd> to <kbd>F7</kbd> for themselves.</div></div><div class="foot"><span>xGEO Live · Operator's Handbook</span><span>2</span></div>
+<section class="front">
+<div class="chap-head"><div class="no">Contents</div><h1>Table of contents</h1></div>
+<div class="toc" id="toc"><div class="ch"><a class="chl"><span class="t"><i>1</i>Introduction</span><span class="dots"></span><span class="pg">4</span></a></div><a><span class="t"><i>1.1</i>What kind of game this is</span><span class="dots"></span><span class="pg">4</span></a><a><span class="t"><i>1.2</i>What you need</span><span class="dots"></span><span class="pg">4</span></a><a><span class="t"><i>1.3</i>How to use this manual</span><span class="dots"></span><span class="pg">4</span></a><div class="ch"><a class="chl"><span class="t"><i>2</i>The Mission</span><span class="dots"></span><span class="pg">5</span></a></div><a><span class="t"><i>2.1</i>The situation</span><span class="dots"></span><span class="pg">5</span></a><a><span class="t"><i>2.2</i>Who's who</span><span class="dots"></span><span class="pg">5</span></a><a><span class="t"><i>2.3</i>How you win</span><span class="dots"></span><span class="pg">5</span></a><a><span class="t"><i>2.4</i>Your opponent</span><span class="dots"></span><span class="pg">6</span></a><a><span class="t"><i>2.5</i>Tension and war</span><span class="dots"></span><span class="pg">7</span></a><a><span class="t"><i>2.6</i>Three ways to play</span><span class="dots"></span><span class="pg">8</span></a><div class="ch"><a class="chl"><span class="t"><i>3</i>Getting Started</span><span class="dots"></span><span class="pg">9</span></a></div><a><span class="t"><i>3.1</i>The title screen</span><span class="dots"></span><span class="pg">9</span></a><a><span class="t"><i>3.2</i>The main screen</span><span class="dots"></span><span class="pg">10</span></a><a><span class="t"><i>3.3</i>Time</span><span class="dots"></span><span class="pg">11</span></a><a><span class="t"><i>3.4</i>The camera</span><span class="dots"></span><span class="pg">11</span></a><div class="ch"><a class="chl"><span class="t"><i>4</i>Your First Game</span><span class="dots"></span><span class="pg">12</span></a></div><a><span class="t"><i>4.1</i>Get your bearings</span><span class="dots"></span><span class="pg">12</span></a><a><span class="t"><i>4.2</i>Close in</span><span class="dots"></span><span class="pg">13</span></a><a><span class="t"><i>4.3</i>See it off</span><span class="dots"></span><span class="pg">14</span></a><div class="ch"><a class="chl"><span class="t"><i>5</i>Your Tools</span><span class="dots"></span><span class="pg">15</span></a></div><a><span class="t"><i>5.1</i>Tracks: knowing where it is</span><span class="dots"></span><span class="pg">15</span></a><a><span class="t"><i>5.2</i>The planner</span><span class="dots"></span><span class="pg">16</span></a><a><span class="t"><i>5.3</i>Checking a plan and burning</span><span class="dots"></span><span class="pg">17</span></a><a><span class="t"><i>5.4</i>Small moves up close</span><span class="dots"></span><span class="pg">18</span></a><a><span class="t"><i>5.5</i>The telescope</span><span class="dots"></span><span class="pg">19</span></a><a><span class="t"><i>5.6</i>The listening station</span><span class="dots"></span><span class="pg">20</span></a><a><span class="t"><i>5.7</i>Identifying a signal</span><span class="dots"></span><span class="pg">21</span></a><a><span class="t"><i>5.8</i>Being seen</span><span class="dots"></span><span class="pg">21</span></a><a><span class="t"><i>5.9</i>Radars and your track</span><span class="dots"></span><span class="pg">22</span></a><a><span class="t"><i>5.10</i>The timeline</span><span class="dots"></span><span class="pg">23</span></a><a><span class="t"><i>5.11</i>Other windows</span><span class="dots"></span><span class="pg">24</span></a><div class="ch"><a class="chl"><span class="t"><i>6</i>Playing Well</span><span class="dots"></span><span class="pg">26</span></a></div><div class="ch"><a class="chl"><span class="t"><i>7</i>The Debrief</span><span class="dots"></span><span class="pg">27</span></a></div><a><span class="t"><i>7.1</i>What it shows</span><span class="dots"></span><span class="pg">27</span></a><a><span class="t"><i>7.2</i>The replay</span><span class="dots"></span><span class="pg">27</span></a><div class="ch"><a class="chl"><span class="t"><i>8</i>Physics You'll Feel</span><span class="dots"></span><span class="pg">28</span></a></div><a><span class="t"><i>8.1</i>Falling round the Earth</span><span class="dots"></span><span class="pg">28</span></a><a><span class="t"><i>8.2</i>Faster means slower</span><span class="dots"></span><span class="pg">28</span></a><a><span class="t"><i>8.3</i>Fuel is speed</span><span class="dots"></span><span class="pg">28</span></a><a><span class="t"><i>8.4</i>Light and shadow</span><span class="dots"></span><span class="pg">28</span></a><a><span class="t"><i>8.5</i>Radio fades with distance</span><span class="dots"></span><span class="pg">28</span></a><a><span class="t"><i>8.6</i>Knowing isn't seeing</span><span class="dots"></span><span class="pg">28</span></a><div class="ch"><a class="chl"><span class="t"><i>9</i>Problems and Answers</span><span class="dots"></span><span class="pg">29</span></a></div><div class="ch"><a class="chl"><span class="t"><i>10</i>For Tinkerers</span><span class="dots"></span><span class="pg">30</span></a></div><a><span class="t"><i>10.1</i>Edit</span><span class="dots"></span><span class="pg">30</span></a><a><span class="t"><i>10.2</i>Study</span><span class="dots"></span><span class="pg">30</span></a><a><span class="t"><i>10.3</i>Library</span><span class="dots"></span><span class="pg">30</span></a><a><span class="t"><i>10.4</i>Real and invented</span><span class="dots"></span><span class="pg">30</span></a><div class="ch"><a class="chl"><span class="t"><i>A</i>Keys and Cheat Sheet</span><span class="dots"></span><span class="pg">31</span></a></div><div class="ch"><a class="chl"><span class="t"><i>B</i>Glossary</span><span class="dots"></span><span class="pg">32</span></a></div><div class="ch"><a class="chl"><span class="t"><i>C</i>The Tutorial</span><span class="dots"></span><span class="pg">33</span></a></div></div>
 </section>
-<section class="pg">
-<div class="kick">Contents</div>
-<h1>What's inside</h1>
-<p class="lede">Labels you see on screen are written <span class="q">like this</span>. Keys look like <kbd>F3</kbd>.</p>
-
-<div class="bd"><div class="toc">
-<div class="part">Part 1 · The mission</div>
-<a><span>The situation</span><span>5</span></a>
-<a><span>How you win</span><span>6</span></a>
-<a><span>Your opponent</span><span>7</span></a>
-<a><span>Tension and war</span><span>8</span></a>
-<a><span>Three ways to play</span><span>9</span></a>
-<div class="part">Part 2 · Your first game</div>
-<a><span>Starting a game</span><span>11</span></a>
-<a><span>The screen</span><span>12</span></a>
-<a><span>Time and the camera</span><span>13</span></a>
-<a><span>Step by step 1: get your bearings</span><span>14</span></a>
-<a><span>Step by step 2: close in</span><span>15</span></a>
-<a><span>Step by step 3: see it off</span><span>16</span></a>
-<div class="part">Part 3 · Your tools</div>
-<a><span>Know where it is</span><span>18</span></a>
-<a><span>Plan a move</span><span>19</span></a>
-<a><span>Check the plan, then burn</span><span>20</span></a>
-<a><span>Small moves up close</span><span>21</span></a>
-<a><span>Look with the telescope</span><span>22</span></a>
-<a><span>Listen to its radio</span><span>23</span></a>
-<a><span>Identify the signal</span><span>24</span></a>
-<a><span>Being seen</span><span>25</span></a>
-<a><span>Radars and your track</span><span>26</span></a>
-<a><span>The timeline</span><span>27</span></a>
-<a><span>Other windows</span><span>28</span></a>
-<div class="part">Part 4 · Reference</div>
-<a><span>Playing well</span><span>30</span></a>
-<a><span>The debrief</span><span>31</span></a>
-<a><span>Physics you'll feel</span><span>32</span></a>
-<a><span>Problems and answers</span><span>33</span></a>
-<a><span>Cheat sheet</span><span>34</span></a>
-<a><span>Glossary</span><span>35</span></a>
-<a><span>The tutorial at a glance</span><span>36</span></a>
-<a><span>For tinkerers</span><span>37</span></a>
-</div></div><div class="foot"><span>xGEO Live · Operator's Handbook</span><span>3</span></div>
+<!-- ============================================================ 1 -->
+<section class="chap" data-ch="1" data-title="Introduction" style="page:ch1">
+<div class="chap-head"><div class="no">Chapter 1</div><h1>Introduction</h1></div>
+<p class="intro">You fly one US inspector satellite. Another nation's inspector is creeping up on a satellite you protect. Your job is to make it leave, with no weapons and without starting a war.</p>
+<h2><span class="n">1.1</span>What kind of game this is</h2>
+<p>There are no lasers and no explosions in xGEO. Satellites race round the Earth at nearly 8 km/s, but they meet and part slowly, a few metres a second at a time. Every move costs fuel you can never get back. Every look at the enemy depends on where the Sun is. Every radio burst you hear is worked out from real signal physics.</p>
+<p>You don't need to know orbital mechanics to play. The game does the maths and tells you the price of each move. This manual gives you the few rules of thumb that make you good at it.</p>
+<h2><span class="n">1.2</span>What you need</h2>
+<ul>
+<li><b>A computer:</b> a desktop or laptop. Phones and touch screens aren't supported.</li>
+<li><b>A browser:</b> a current Chrome, Edge or Firefox. The first load takes about a minute.</li>
+<li><b>Mouse and keys:</b> a scroll wheel for zooming. A middle button helps.</li>
+<li><b>A big screen:</b> 1920 × 1080 or more is best. Press <kbd>F11</kbd> for full screen.</li>
+</ul>
+<div class="box"><span class="l">Note</span><p>Click inside the game once after it loads so it gets your keyboard. Until you do, some browsers keep <kbd>F1</kbd> to <kbd>F7</kbd> for themselves.</p></div>
+<h2><span class="n">1.3</span>How to use this manual</h2>
+<ol class="steps">
+<li><b>Read Chapter 2, The Mission.</b> It explains how you win and how your opponent thinks. It takes about ten minutes.</li>
+<li><b>Start a game with the tutorial on.</b> A new game teaches the controls in 24 short steps, one at a time.</li>
+<li><b>Follow Chapter 4, Your First Game.</b> It walks you through a winning game, move by move.</li>
+<li><b>Keep the rest for later.</b> Chapter 5 explains each tool in turn. The chapters after it hold tips, answers and reference.</li>
+</ol>
+<p>Labels you see on the screen are written like <span class="q">Burn now</span>. Keys look like <kbd>F3</kbd>. Cross-references point to section numbers, for example “see 5.2”.</p>
 </section>
-<section class="pg opener">
-<div class="art" style="background-image:url(img/gizmo-cosmos.jpg)"></div>
-<div class="num">1</div>
-<h1>The mission</h1>
-<p class="lede">Who's out there, what they want, and what counts as winning.</p>
-<ul><li><span>5</span>The situation</li><li><span>6</span>How you win</li><li><span>7</span>Your opponent</li><li><span>8</span>Tension and war</li><li><span>9</span>Three ways to play</li></ul>
-<div class="foot"><span>Part 1</span><span>4</span></div>
-</section>
-<section class="pg">
-<div class="kick">1 · The mission</div>
-<h1>The situation</h1>
-<p class="lede">Monday 26 October 2026, 21:00 UTC, about 540 km up. A Russian inspector is working its way round a US radar satellite. You have two days to make it leave.</p>
-
-
-
-<div class="bd"><div class="gL">
-<div>
+<!-- ============================================================ 2 -->
+<section class="chap" data-ch="2" data-title="The Mission" style="page:ch2">
+<div class="chap-head"><div class="no">Chapter 2</div><h1>The Mission</h1></div>
+<p class="intro">Monday 26 October 2026, 21:00 UTC, about 540 km up. A Russian inspector is working its way round a US radar satellite. You have two days to make it leave.</p>
+<h2><span class="n">2.1</span>The situation</h2>
 <p><b>This much is real.</b> In October 2026 the Russian satellite Cosmos 2612 was reported closing on the commercial radar satellite ICEYE-X36.</p>
-<p><b>The rest is the game.</b> The US sends its own inspector, WATCHMAN-1, to stand beside X36 and make the visitor's job hard.</p>
-<p>Cosmos 2612 wants three close looks at X36. It doesn't want company. Get close enough, often enough, and it gives up and goes home.</p>
-<p>But every time you crowd it, tension rises in both capitals. Push too hard and it ends in open conflict, which loses the game outright.</p>
-</div>
-<div class="tip"><span class="l">Your orders</span>Make Cosmos 2612 break off before it finishes its look at ICEYE-X36. You have no weapons. No war.</div>
-</div><div class="grp fill"><h2>Who's who</h2><div class="g2 fill" style="grid-template-rows:1fr 1fr">
-<div class="card b"><img alt="" class="ic" src="img/p-watchman.png" style="width:56px;height:auto"/><span class="tag" style="color:var(--own)">You · WCH-1</span><h3>WATCHMAN-1</h3><p>A US inspector (invented). About 260 m/s of fuel for the whole mission, a telescope and a radio receiver. No weapons, no radar.</p></div>
-<div class="card r"><img alt="" class="ic" src="img/p-kite.png" style="width:56px;height:auto"/><span class="tag" style="color:var(--host)">The visitor · TRK 4423</span><h3>Cosmos 2612</h3><p>A real Russian inspector. Only about 90 m/s of fuel. Watches you with a small infrared telescope and radios home on 2,250 MHz.</p></div>
-<div class="card g"><img alt="" class="ic" src="img/p-oriel.png" style="width:56px;height:auto"/><span class="tag" style="color:var(--prot)">Protect · X36</span><h3>ICEYE-X36</h3><p>A real commercial radar satellite. It has no engine, so it can't get out of the way. You must keep the visitor off it.</p></div>
-<div class="card b"><img alt="" class="ic" src="img/i-tracker.png"/><span class="tag" style="color:var(--own)">Your eyes · sites</span><h3>Five ground radars</h3><p>Real sites in Alaska, Texas, Arizona, New Zealand and the Pacific. Each sees Cosmos only while it passes overhead.</p></div>
-</div></div></div><div class="foot"><span>The mission</span><span>5</span></div>
+<p><b>The rest is the game.</b> The US sends its own inspector, WATCHMAN-1, to stand beside X36 and make the visitor's job hard. Cosmos 2612 wants three close looks at X36, and it doesn't want company. Get close enough, often enough, and it gives up and goes home.</p>
+<p>But every time you crowd it, tension rises in both capitals. Push too hard and the crisis ends in open conflict, which loses the game outright.</p>
+<div class="box"><span class="l">Your orders</span><p>Make Cosmos 2612 break off before it finishes its look at ICEYE-X36. You have no weapons. No war.</p></div>
+<h2><span class="n">2.2</span>Who's who</h2>
+<table>
+<tr><th style="width:30%">Craft</th><th style="width:18%">On screen</th><th>What it is</th></tr>
+<tr><td><span class="dot" style="background:var(--own)"></span>WATCHMAN-1</td><td>WCH-1 (you)</td><td>A US inspector, invented for the game. About 260 m/s of fuel for the whole mission, a telescope and a radio receiver. No weapons and no radar.</td></tr>
+<tr><td><span class="dot" style="background:var(--host)"></span>Cosmos 2612</td><td>TRK 4423</td><td>A real Russian inspector. Only about 90 m/s of fuel. It watches you with a small infrared telescope and radios home on 2,250 MHz.</td></tr>
+<tr><td><span class="dot" style="background:var(--prot)"></span>ICEYE-X36</td><td>X36</td><td>A real commercial radar satellite. It has no engine, so it can't get out of the way. You must keep the visitor off it.</td></tr>
+<tr><td><span class="dot" style="background:var(--own)"></span>Five ground radars</td><td>PFISR, MSR, ASR, KSR, FENCE</td><td>Real sites in Alaska, Texas, Arizona, New Zealand and the Pacific. Each sees Cosmos only while it passes overhead (see 5.9).</td></tr>
+</table>
+<h2><span class="n">2.3</span>How you win</h2>
+<p>The operation is scored out of 100 points across five goals. Two of them end the game at once if you fail them. Press <kbd>F1</kbd> during play to see each goal ticked, crossed or still open.</p>
+<table>
+<tr><th class="c">Points</th><th>Goal</th><th>How it is scored</th></tr>
+<tr><td class="num">40</td><td>Make it leave <span class="must">Must not fail</span></td><td>Lost if it finishes all three of its looks. Half marks if it's still at work when the two days end.</td></tr>
+<tr><td class="num">20</td><td>Keep it more than 1 km from X36</td><td>Full marks if it never gets inside 1 km. At 500 m you keep only a quarter.</td></tr>
+<tr><td class="num">20</td><td>Keep a good track on it</td><td>Know where it is to within 1 km for at least 80 % of the time.</td></tr>
+<tr><td class="num">10</td><td>Save fuel</td><td>Full marks if you use a quarter of your fuel or less. Fails past half.</td></tr>
+<tr><td class="num">10</td><td>No war <span class="must">Must not fail</span></td><td>Lost if escalation reaches 100. The lower it ends, the more you keep.</td></tr>
+</table>
+<h3>How the game ends</h3>
+<ul>
+<li><b>Operation complete.</b> Cosmos 2612 gave up and left. You are scored on all five goals.</li>
+<li><b>Operation failed.</b> It finished its look, or escalation reached 100. Either one ends the game at once.</li>
+<li><b>Time is up.</b> Two days passed and neither happened. You get half the points for the first goal.</li>
+</ul>
+<div class="box tip"><span class="l">Example</span><p>A good game: it leaves (40), never gets inside 1 km of X36 (20), a good track 76 % of the time (19), 30 % of your fuel used (9), escalation ends at 15 (8.5). <b>Total 97.</b></p></div>
+<h2><span class="n">2.4</span>Your opponent</h2>
+<p>Cosmos 2612 follows a few simple rules. Learn them and you know most of the game.</p>
+<h3><span class="n">2.4.1</span>Its plan: three looks at X36</h3>
+<table>
+<tr><th>Stop</th><th>Where it parks</th><th>How long</th></tr>
+<tr><td>Stop 1</td><td>2 km behind X36</td><td>6 hours</td></tr>
+<tr><td>Stop 2</td><td>2 km ahead of X36</td><td>6 hours</td></tr>
+<tr><td>Stop 3</td><td>0.8 km behind X36, inside its 1 km keep-out</td><td>8 hours</td></tr>
+<tr><td>Then</td><td>It goes home, about 29 hours in. You lose.</td><td>–</td></tr>
+</table>
+<p>Each hop between stops takes about 3 hours. <b>Only a parked Cosmos can be pushed away,</b> so watch the event log for the line saying it has parked.</p>
+<h3><span class="n">2.4.2</span>When you crowd it</h3>
+<figure class="r"><img alt="Cosmos 2612 up close." src="img/cosmos-close.jpg"/><figcaption><b>Figure 2.1</b>Cosmos 2612 seen from WATCHMAN-1, 15 km out.</figcaption></figure>
+<p>Crowding means all three of these at once: it is <b>parked</b>, you are <b>within 5 km</b> of it, and it <b>can see you</b>. While it is hopping between stops it ignores you.</p>
+<ul>
+<li><b>The first time,</b> it gives way. It moves 8 km off, to the far side of X36. That takes about 2 hours, then it holds there for 4 hours.</li>
+<li><b>The second time,</b> it gives way again, to a new spot 8 km off on the far side.</li>
+<li><b>The third time,</b> it gives up. A 4 m/s burn and it climbs away. Once it is 200 km from X36 it's gone, and you win.</li>
+</ul>
+<h3><span class="n">2.4.3</span>When it is left alone</h3>
+<p>If none of your craft is within 50 km when a stop ends, it moves in: its next stop is <b>half as far</b> from X36. Stay near and it keeps its distance.</p>
+<div class="log clear"><span class="l">Event log</span>“TRK 4423 doesn't want our inspector that close: it's moving to the far side of X36.”</div>
+<h2><span class="n">2.5</span>Tension and war</h2>
+<p>The escalation number at the top right of the screen shows how close the crisis is to open conflict. It only ever goes up. At 100 you lose.</p>
+<figure><img alt="The escalation bar." src="img/c-escal.jpg"/><figcaption><b>Figure 2.2</b>The escalation bar. It turns amber at 25 and red at 50.</figcaption></figure>
+<table>
+<tr><th>What raises it</th><th class="c">Escalation</th><th>When</th></tr>
+<tr><td>Each crowding</td><td class="c">+5</td><td>Every time you push it away. Three crowdings add 15.</td></tr>
+<tr><td>Staying too close</td><td class="c">+12 an hour</td><td>For every hour you stay closer than 1 km to it.</td></tr>
+<tr><td>It parks too close</td><td class="c">+3</td><td>Each time it parks inside X36's 1 km keep-out.</td></tr>
+</table>
+<h3>What happens as it climbs</h3>
+<ul>
+<li><b>At 25 it turns cautious.</b> It gives way one time fewer, and it stops creeping in when you are far away.</li>
+<li><b>At 50 it leaves early.</b> The next time you crowd it, it goes home at once.</li>
+<li><b>At 100 it is war.</b> The operation fails, whatever else happened.</li>
+</ul>
+<h3>What it costs you at the end</h3>
+<table>
+<tr><th>Final escalation</th><th class="c">0</th><th class="c">15</th><th class="c">25</th><th class="c">50</th><th class="c">100</th></tr>
+<tr><td>Peace points (of 10)</td><td class="c">10</td><td class="c">8.5</td><td class="c">7.5</td><td class="c">5</td><td class="c" style="color:var(--host)">You lose</td></tr>
+</table>
+<p>Pushing hard wins sooner, because high tension makes it leave early. But every point of escalation costs you score at the end, and too much is war. The sweet spot is <b>between 1 and 5 km</b>: close enough to crowd it, far enough that the hourly +12 never starts.</p>
+<div class="box warn"><span class="l">Warning</span><p>The event log warns you at 25, 50 and 90.</p></div>
+<h2><span class="n">2.6</span>Three ways to play</h2>
+<p>There is no single right answer. These three plans all work. They trade score, speed and risk differently.</p>
+<h3><span class="n">2.6.1</span>The patient shadow</h3>
+<p>Close in early and stay 2 to 4 km from Cosmos. Crowd it once at each stop. Tension stays low, your track stays good all game, and you spend a moderate amount of fuel. It is slow, but it scores highest.</p>
+<h3><span class="n">2.6.2</span>The hard press</h3>
+<p>Crowd it at every chance and sit near 1 km. Escalation passes 25, then 50, and it leaves at the next crowding. It is quick and uses the most fuel, and you give up most of the peace points. One slip is war.</p>
+<h3><span class="n">2.6.3</span>The guard</h3>
+<p>Park beside X36 instead of chasing Cosmos. Because you are within 50 km it keeps its distance, and your telescope holds the track. It costs the least fuel at first, but Cosmos never leaves on its own: sooner or later you must go to it.</p>
+<div class="box tip"><span class="l">Tip</span><p>Three crowdings, a stop apart, only fit into two days if you start early. Get alongside in the first few hours. To try a bold move safely, use <span class="q">Branch from now</span> on the Timeline first (see 5.10).</p></div>
 </section>
-<section class="pg">
-<div class="kick">1 · The mission</div>
-<h1>How you win</h1>
-<p class="lede">Five goals, 100 points. Two of them end the game if you fail. Press <kbd>F1</kbd> during play to see them ticked off.</p>
-
-
-
-
-<div class="bd"><div class="">
-<div class="goal"><div class="pts">40<small>points</small></div><div><h3>Make it leave <span class="must">must not fail</span></h3><p>Lost if it finishes all three of its looks. Half marks if it's still at work when the two days end.</p></div></div>
-<div class="goal"><div class="pts">20<small>points</small></div><div><h3>Keep it more than 1 km from X36</h3><p>Full marks if it never gets inside 1 km. At 500 m you keep only a quarter.</p></div></div>
-<div class="goal"><div class="pts">20<small>points</small></div><div><h3>Keep a good track on it</h3><p>Know where it is to within 1 km at least 80 % of the time.</p></div></div>
-<div class="goal"><div class="pts">10<small>points</small></div><div><h3>Save fuel</h3><p>Full marks using a quarter of your fuel or less. Fails past half.</p></div></div>
-<div class="goal"><div class="pts">10<small>points</small></div><div><h3>No war <span class="must">must not fail</span></h3><p>Lost if escalation reaches 100. The lower it ends, the more you keep.</p></div></div>
-</div><div class="grp"><h2>Three ways it ends</h2><div class="g3">
-<div class="card g"><h3>Operation complete</h3><p>Cosmos 2612 gave up and left. You're scored on all five goals.</p></div>
-<div class="card r"><h3>Operation failed</h3><p>It finished its look, or escalation hit 100. Either ends the game at once.</p></div>
-<div class="card y"><h3>The 2 days are up</h3><p>Neither happened in time. Half the points for the first goal.</p></div>
-</div></div><div class="tip"><span class="l">A good score</span>It leaves (40), never gets inside 1 km of X36 (20), a good track 76 % of the time (19), 30 % of your fuel used (9), escalation ends at 15 (8.5). <b>Total 97.</b></div></div><div class="foot"><span>The mission</span><span>6</span></div>
-</section>
-<section class="pg">
-<div class="kick">1 · The mission</div>
-<h1>Your opponent</h1>
-<p class="lede">Cosmos 2612 follows a few simple rules. Learn them and you know most of the game.</p>
-
-
-
-
-
-
-
-<div class="bd"><div class="grp"><h2>Its plan: three looks at X36</h2><div class="plan">
-<div class="s"><span class="tag">Stop 1</span><h3>2 km behind</h3><p>Holds 6 hours</p></div><div class="a">›</div>
-<div class="s"><span class="tag">Stop 2</span><h3>2 km ahead</h3><p>Holds 6 hours</p></div><div class="a">›</div>
-<div class="s"><span class="tag">Stop 3</span><h3>0.8 km behind</h3><p>Holds 8 hours. Inside X36's 1 km keep-out.</p></div><div class="a">›</div>
-<div class="s end"><span class="tag" style="color:var(--ink3)">Then</span><h3>It goes home</h3><p>About 29 hours in. You lose.</p></div>
-</div><p style="margin-top:-6px">Each hop between stops takes about 3 hours. <b>Only a parked Cosmos can be pushed away</b>, so watch for the log line saying it has parked.</p></div><div class="grp"><h2 style="margin-top:.16in">When you crowd it</h2><div class="g3">
-<div class="card r"><span class="tag">1st time</span><h3>It gives way</h3><p>It moves 8 km off, to the far side of X36. That takes about 2 hours, then it holds there 4 hours.</p></div>
-<div class="card r"><span class="tag">2nd time</span><h3>It gives way again</h3><p>Same again: a new spot 8 km off on the far side.</p></div>
-<div class="card g"><span class="tag">3rd time</span><h3>It gives up</h3><p>A 4 m/s burn and it climbs away. 200 km from X36, it's gone and you win.</p></div>
-</div></div><div class="gR">
-<div class="fig"><img alt="Cosmos 2612 up close." src="img/cosmos-close.jpg"/><div class="cap">Cosmos 2612 seen from WATCHMAN-1, 15 km out.</div></div>
-<div>
-<h3>What counts as crowding</h3>
-<p>All three at once: it is <b>parked</b>, you are <b>within 5 km</b> of it, and it <b>can see you</b>. Mid-hop it ignores you.</p>
-<h3 style="margin-top:12px">When it's left alone</h3>
-<p>If none of ours is within 50 km when a stop ends, it moves in: its next stop is <b>half as far</b> from X36. Stay near and it keeps its distance.</p>
-</div>
-</div><div class="say"><img alt="" src="img/p-kite.png"/><div><span class="l">In the log</span><p>"TRK 4423 doesn't want our inspector that close: it's moving to the far side of X36."</p></div></div></div><div class="foot"><span>The mission</span><span>7</span></div>
-</section>
-<section class="pg">
-<div class="kick">1 · The mission</div>
-<h1>Tension and war</h1>
-<p class="lede">The escalation number at the top right is how close the crisis is to open conflict. It only goes up. At 100 you lose.</p>
-
-
-
-
-
-
-<div class="bd"><div class="grp"><h2>What raises it</h2><div class="g3">
-<div class="card o"><div class="big">+5</div><h3>Each crowding</h3><p>Every time you push it away. Three crowdings: +15.</p></div>
-<div class="card o"><div class="big">+12</div><h3>An hour inside 1 km</h3><p>For every hour you stay closer than 1 km to it.</p></div>
-<div class="card o"><div class="big">+3</div><h3>It parks too close</h3><p>Each time it parks inside X36's 1 km keep-out.</p></div>
-</div></div><div class="grp"><h2>What happens as it climbs</h2><div class="">
-<div class="meter"><i style="left:25%"></i><i style="left:50%"></i><i style="left:calc(100% - 2px)"></i></div>
-<div class="mlab"><span style="left:12%">Calm</span><span style="left:25%">25</span><span style="left:50%">50</span><span style="left:75%">Near war</span><span style="left:97%">100</span></div>
-<div class="g3">
-<div><h3 style="color:var(--unk)">At 25: cautious</h3><p>It gives way one time fewer, and stops creeping in when you're far away.</p></div>
-<div><h3 style="color:#e8865a">At 50: it leaves</h3><p>The next time you crowd it, it goes home at once.</p></div>
-<div><h3 style="color:var(--host)">At 100: war</h3><p>Open conflict. The operation fails, whatever else happened.</p></div>
-</div>
-</div></div><div class="">
-<h2>What it costs you at the end</h2>
-<div class="rates" style="grid-template-columns:repeat(5,1fr)">
-<div><b>0</b><small>final escalation</small><em>10 / 10 peace</em></div>
-<div><b>15</b><small>three crowdings</small><em>8.5 / 10</em></div>
-<div><b>25</b><small>first warning</small><em>7.5 / 10</em></div>
-<div><b>50</b><small>it leaves at once</small><em>5 / 10</em></div>
-<div><b style="color:var(--host)">100</b><small>war</small><em style="color:var(--host)">You lose</em></div>
-</div>
-</div><div class="gL">
-<div>
-<h2>The trade</h2>
-<p>Pushing hard wins sooner, since high tension makes it leave early. But every point of escalation costs you score at the end, and too much is war.</p>
-<p>The sweet spot is <b>between 1 and 5 km</b>: close enough to crowd it, far enough that the hourly +12 never starts.</p>
-</div>
-<div class="tip red"><span class="l">Warnings</span>The event log warns you at 25, 50 and 90. The bar turns amber at 25 and red at 50.</div>
-</div></div><div class="foot"><span>The mission</span><span>8</span></div>
-</section>
-<section class="pg">
-<div class="kick">1 · The mission</div>
-<h1>Three ways to play</h1>
-<p class="lede">There's no single right answer. These three plans all work; they trade score, speed and risk differently.</p>
-
-
-<div class="bd"><div class="steps" style="gap:.14in">
-<div class="card b" style="padding:16px 18px"><span class="tag" style="color:var(--own)">Steady · high score</span><h2>The patient shadow</h2><p>Close in early and stay 2 to 4 km from Cosmos. Crowd it once at each stop. Low tension, a good track all game, a few m/s of fuel. Slow, but it scores highest.</p><p class="stats"><span>Tension <b>Low</b></span><span>Fuel <b>Moderate</b></span><span>Speed <b>Slow</b></span></p></div>
-<div class="card r" style="padding:16px 18px"><span class="tag" style="color:var(--host)">Fast · risky</span><h2>The hard press</h2><p>Crowd it at every chance and sit near 1 km. Escalation passes 25, then 50, and it leaves at the next crowding. Quick, but you give up most of the peace points, and one slip is war.</p><p class="stats"><span>Tension <b>High</b></span><span>Fuel <b>Most</b></span><span>Speed <b>Fast</b></span></p></div>
-<div class="card g" style="padding:16px 18px"><span class="tag" style="color:var(--prot)">Defensive</span><h2>The guard</h2><p>Park beside X36 instead of chasing Cosmos. Because you're within 50 km it keeps its distance, and your telescope holds the track. But it never leaves on its own: sooner or later you must go to it.</p><p class="stats"><span>Tension <b>Lowest</b></span><span>Fuel <b>Least at first</b></span><span>Speed <b>Slowest</b></span></p></div>
-</div><div class="g2 end">
-<div class="tip"><span class="l">Mind the clock</span>Three crowdings, a stop apart, only fit into two days if you start early. Get alongside in the first few hours.</div>
-<div class="tip blue"><span class="l">Try it safely</span><span class="q">Branch from now</span> on the Timeline saves the moment. Try a bold move; if it goes wrong, go back (page 27).</div>
-</div></div><div class="foot"><span>The mission</span><span>9</span></div>
-</section>
-<section class="pg opener">
-<div class="art" style="background-image:url(img/shot-console.jpg)"></div>
-<div class="num">2</div>
-<h1>Your first game</h1>
-<p class="lede">The screen, the controls, and a winning game played move by move.</p>
-<ul><li><span>11</span>Starting a game</li><li><span>12</span>The screen</li><li><span>13</span>Time and the camera</li><li><span>14</span>Get your bearings</li><li><span>15</span>Close in</li><li><span>16</span>See it off</li></ul>
-<div class="foot"><span>Part 2</span><span>10</span></div>
-</section>
-<section class="pg">
-<div class="kick">2 · Your first game</div>
-<h1>Starting a game</h1>
-<p class="lede">The game opens on the live Earth turning behind the menu. Any key skips the intro.</p>
-
-
-<div class="bd"><div class="fig"><img alt="The title screen." src="img/menu.jpg"/></div><div class="gL">
-<table class="kv">
+<!-- ============================================================ 3 -->
+<section class="chap" data-ch="3" data-title="Getting Started" style="page:ch3">
+<div class="chap-head"><div class="no">Chapter 3</div><h1>Getting Started</h1></div>
+<p class="intro">The title screen, the main screen, and how to control time and the camera.</p>
+<h2><span class="n">3.1</span>The title screen</h2>
+<p>The game opens on the live Earth turning behind the menu. Any key skips the intro.</p>
+<figure><img alt="The title screen." src="img/menu.jpg"/><figcaption><b>Figure 3.1</b>The title screen.</figcaption></figure>
+<table>
+<tr><th style="width:30%">Menu item</th><th>What it does</th></tr>
 <tr><td>Start scenario</td><td>A new game of CLOSE PASS with the tutorial on. Time starts paused.</td></tr>
 <tr><td>Continue</td><td>Carry on from your save. Greyed out when there isn't one.</td></tr>
-<tr><td>How to play</td><td>A one-page briefing: goals, the four things you do, and the keys.</td></tr>
+<tr><td>How to play</td><td>A one-page briefing: the goals, the four things you do, and the keys.</td></tr>
 <tr><td>Settings</td><td>Plain or military words, music and sound volume. Remembered between games.</td></tr>
-<tr><td>Edit · Study · Library</td><td>For tinkerers: change the scenario's numbers, test plans, read the sources (page 37).</td></tr>
+<tr><td>Edit · Study · Library</td><td>For tinkerers: change the scenario's numbers, test plans, read the sources (see Chapter 10).</td></tr>
 </table>
-<div>
-<div class="tip"><span class="l">Saving</span>There's one save. The game writes it when you go back to the title screen (<kbd>Esc</kbd> with nothing open) and once every game day. Finishing a game deletes it.</div>
-<div class="tip blue" style="margin-top:10px"><span class="l">Plain or military words</span>Settings › Terms switches between plain words and military terms, such as <span class="q">Listening station</span> or <span class="q">EW console</span>. The game is the same either way.</div>
-</div>
-</div></div><div class="foot"><span>Your first game</span><span>11</span></div>
-</section>
-<section class="pg">
-<div class="kick">2 · Your first game</div>
-<h1>The screen</h1>
-<p class="lede">Everything happens on one screen. Hover over anything and a card explains it.</p>
-
-
-<div class="bd"><div class="anno">
+<h3><span class="n">3.1.1</span>Saving</h3>
+<p>There is one save. The game writes it when you go back to the title screen (<kbd>Esc</kbd> with nothing open) and once every game day. Finishing a game deletes it.</p>
+<h3><span class="n">3.1.2</span>Plain or military words</h3>
+<p><span class="q">Settings › Terms</span> switches between plain words and military terms, for example <span class="q">Listening station</span> or <span class="q">EW console</span>. The game is the same either way. The glossary in Appendix B lists both.</p>
+<h2><span class="n">3.2</span>The main screen</h2>
+<p>Everything happens on one screen. Hover over anything and a card explains it.</p>
+<figure class="anno">
 <img alt="The main screen, numbered." src="img/shot-console.jpg"/>
 <span class="pin" style="left:13%;top:2.6%">1</span>
 <span class="pin" style="left:49%;top:2.6%">2</span>
@@ -448,576 +335,467 @@ kbd{display:inline-block;min-width:1.65em;text-align:center;font:600 8.6pt/1 var
 <span class="pin" style="left:57%;top:46%">7</span>
 <span class="pin" style="left:38%;top:62%">8</span>
 <span class="pin" style="left:3%;top:86%">9</span>
-</div><div class="legend">
-<div class="lg"><span class="n">1</span><div><b>Menus and search</b>Every command, with its key. Type in the box to find one.</div></div>
-<div class="lg"><span class="n">6</span><div><b>Selected item</b>Everything you know about what you clicked: range, whether it sees you, how sure you are.</div></div>
-<div class="lg"><span class="n">2</span><div><b>Clock and time speed</b>UTC time, mission time, and how fast time runs.</div></div>
-<div class="lg"><span class="n">7</span><div><b>Cosmos 2612</b>Shown as TRK 4423, your track on it: your best guess of where it is.</div></div>
-<div class="lg"><span class="n">3</span><div><b>Escalation</b>How close the crisis is to war, 0 to 100.</div></div>
-<div class="lg"><span class="n">8</span><div><b>The 3-D view</b>The Earth, day and night, your orbit, the radars as rings on the ground.</div></div>
-<div class="lg"><span class="n">4</span><div><b>Your orders</b>Plot move, Look, Match orbit. Keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>.</div></div>
-<div class="lg"><span class="n">9</span><div><b>Timeline</b>The next hours: your burns, Cosmos's closest pass, radar passes, sunlight.</div></div>
-<div class="lg"><span class="n">5</span><div><b>Overview</b>Every contact, nearest first. Click to select, double-click to centre.</div></div>
-</div></div><div class="foot"><span>Your first game</span><span>12</span></div>
-</section>
-<section class="pg">
-<div class="kick">2 · Your first game</div>
-<h1>Time and the camera</h1>
-<p class="lede">The game starts paused, and time only moves when you let it. One trip round the Earth takes about 95 minutes.</p>
-
-
-
-
-
-<div class="bd"><div class="fig"><img alt="The clock and time-speed buttons." src="img/c-clock.jpg"/><div class="cap">Click a speed, or use <kbd>[</kbd> <kbd>]</kbd> to go slower or faster. <kbd>Space</kbd> pauses.</div></div><div class="rates">
-<div><b>1×</b><small>real time</small><em>Watch a burn</em></div>
-<div><b>60×</b><small>a minute a second</small><em>Near the target</em></div>
-<div><b>600×</b><small>10 min a second</small><em>Coasting</em></div>
-<div><b>3K×</b><small>an hour a second</small><em>Waiting it out</em></div>
-<div><b>21K×</b><small>6 hours a second</small><em>Long waits</em></div>
-<div><b>1d× 7d×</b><small>a day, a week</small><em>Not needed here</em></div>
-</div><div class="g2">
-<div>
-<h2>Mouse</h2>
-<div class="keys">
-<span><kbd>Drag</kbd></span><span>Turn the view round its focus</span>
-<span><kbd>Right-drag</kbd></span><span>Slide the view</span>
-<span><kbd>Wheel</kbd></span><span>Zoom in and out</span>
-<span><kbd>Click</kbd></span><span>Select a contact</span>
-<span><kbd>Double-click</kbd></span><span>Focus on it (ours come in close)</span>
-<span><kbd>Right-click</kbd></span><span>Its orders</span>
+<figcaption><b>Figure 3.2</b>The main screen.</figcaption>
+</figure>
+<ol class="legend">
+<li><b>Menus and search.</b> Every command, with its key. Type in the box to find one.</li>
+<li><b>Clock and time speed.</b> UTC time, mission time, and how fast time runs.</li>
+<li><b>Escalation.</b> How close the crisis is to war, 0 to 100.</li>
+<li><b>Your orders.</b> Plot move, Look, Match orbit. Keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>.</li>
+<li><b>Overview.</b> Every contact, nearest first. Click to select, double-click to centre.</li>
+<li><b>Selected item.</b> Everything you know about what you clicked: range, whether it sees you, how sure you are.</li>
+<li><b>Cosmos 2612.</b> Shown as TRK 4423, your track on it: your best guess of where it is.</li>
+<li><b>The 3-D view.</b> The Earth by day and night, your orbit, the radars as rings on the ground.</li>
+<li><b>Timeline.</b> The next hours: your burns, Cosmos's closest pass, radar passes, sunlight.</li>
+</ol>
+<h2><span class="n">3.3</span>Time</h2>
+<p>The game starts paused, and time only moves when you let it. One trip round the Earth takes about 95 minutes. Nothing happens while you are paused, so pause whenever you need to think.</p>
+<figure><img alt="The clock and time-speed buttons." src="img/c-clock.jpg"/><figcaption><b>Figure 3.3</b>The clock. Click a speed, or press <kbd>[</kbd> and <kbd>]</kbd> to go slower or faster. <kbd>Space</kbd> pauses.</figcaption></figure>
+<table>
+<tr><th>Speed</th><th>One real second is</th><th>Use it for</th></tr>
+<tr><td>1×</td><td>One second</td><td>Watching a burn</td></tr>
+<tr><td>60×</td><td>One minute</td><td>Working near the target</td></tr>
+<tr><td>600×</td><td>Ten minutes</td><td>Coasting to a meeting</td></tr>
+<tr><td>3K×</td><td>About an hour</td><td>Waiting out one of its stops</td></tr>
+<tr><td>21K×</td><td>About six hours</td><td>Long waits</td></tr>
+<tr><td>1d× and 7d×</td><td>A day, a week</td><td>Not needed in CLOSE PASS</td></tr>
+</table>
+<h2><span class="n">3.4</span>The camera</h2>
+<div class="pair" style="break-inside:auto">
+<table style="margin:0">
+<tr><th>Mouse</th><th>Does</th></tr>
+<tr><td>Drag</td><td>Turn the view round its focus</td></tr>
+<tr><td>Right-drag</td><td>Slide the view</td></tr>
+<tr><td>Wheel</td><td>Zoom in and out</td></tr>
+<tr><td>Click</td><td>Select a contact</td></tr>
+<tr><td>Double-click</td><td>Focus on it</td></tr>
+<tr><td>Right-click</td><td>Its orders</td></tr>
+</table>
+<table style="margin:0">
+<tr><th>Key</th><th>Does</th></tr>
+<tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Turn the view</td></tr>
+<tr><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Zoom out and in</td></tr>
+<tr><td><kbd>F</kbd></td><td>Close-up on the selection</td></tr>
+<tr><td><kbd>Tab</kbd></td><td>Focus on the next object</td></tr>
+<tr><td><kbd>Shift</kbd></td><td>Hold for faster camera keys</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Back out of whatever is open</td></tr>
+</table>
 </div>
-</div>
-<div>
-<h2>Keys</h2>
-<div class="keys">
-<span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>Turn the view</span>
-<span><kbd>Q</kbd> <kbd>E</kbd></span><span>Zoom out and in</span>
-<span><kbd>F</kbd></span><span>Close-up on the selection</span>
-<span><kbd>Tab</kbd></span><span>Focus on the next object</span>
-<span><kbd>Shift</kbd></span><span>Hold for faster camera keys</span>
-<span><kbd>Esc</kbd></span><span>Back out of whatever is open</span>
-</div>
-</div>
-</div><div class="g2">
-<div class="fig"><img alt="A hover card." src="img/c-tip.jpg"/></div>
-<div><h3>Hover for help</h3><p>Rest the mouse on any number, button or contact and a card says what it is and what it means for you. When you're unsure, hover first.</p></div>
-</div><div class="tip"><span class="l">Speed for the job</span>60× near Cosmos, 600× while coasting to a meeting, 3K× to wait out a stop. Pause whenever you need to think: nothing happens while you plan.</div></div><div class="foot"><span>Your first game</span><span>13</span></div>
+<h3><span class="n">3.4.1</span>Hover for help</h3>
+<figure class="r s"><img alt="A hover card." src="img/c-tip.jpg"/><figcaption><b>Figure 3.4</b>A hover card.</figcaption></figure>
+<p>Rest the mouse on any number, button or contact and a card says what it is and what it means for you. When you are unsure about something on the screen, hover over it first.</p>
+<p>With military terms switched on (see 3.1.2), the cards for radio and sensor numbers also show the formula behind them.</p>
+<div class="clear"></div>
 </section>
-<section class="pg">
-<div class="kick">2 · Your first game · Step by step</div>
-<h1>1 · Get your bearings</h1>
-<p class="lede">Before you move, know where everyone is, and hear Cosmos talk. Once you're within 10 km it stops.</p>
-
-<div class="bd"><div class="wk">
-<div class="wr"><span class="n">1</span><div><h3>Meet the players</h3><p>Click X36, then TRK 4423, in the Overview. X36 is 20 km ahead of you. TRK 4423 is Cosmos 2612, 15 km away. Double-click each to see it.</p><span class="do">Overview · click, double-click</span></div><img alt="" src="img/c-overview.jpg"/></div>
-<div class="wr"><span class="n">2</span><div><h3>Read your goals</h3><p>Five goals. Two lose the game: letting it finish, or escalation 100. The rest are points.</p><span class="do"><kbd>F1</kbd> Campaign · <kbd>Esc</kbd> closes</span></div><img alt="" src="img/campaign.jpg"/></div>
-<div class="wr"><span class="n">3</span><div><h3>Listen</h3><p>Open the Listening station and speed up. Its first report comes within about three hours, a bright stripe at 2,250 MHz.</p><span class="do"><kbd>F2</kbd> · <kbd>]</kbd> to 600×</span></div><img alt="" src="img/ew-wf.jpg"/></div>
-<div class="wr"><span class="n">4</span><div><h3>Identify it</h3><p>Click the recording, find its direction, identify it. Now you know who's talking, and your track got sharper. Do it within an hour.</p><span class="do">Click INT-001 · <kbd>D</kbd> · <kbd>I</kbd></span></div><img alt="" src="img/ew-sig.jpg"/></div>
-<div class="wr"><span class="n">5</span><div><h3>Wait for it to park</h3><p>Cosmos is hopping to its first stop. About three hours in, the log says it has parked 2 km behind X36. That's your moment.</p><span class="do">Watch the Events, bottom left</span></div><img alt="" src="img/c-events.jpg"/></div>
-</div></div><div class="foot"><span>Your first game</span><span>14</span></div>
+<!-- ============================================================ 4 -->
+<section class="chap" data-ch="4" data-title="Your First Game" style="page:ch4">
+<div class="chap-head"><div class="no">Chapter 4</div><h1>Your First Game</h1></div>
+<p class="intro">A winning game of CLOSE PASS, played one move at a time. Start a new game, pause, and follow along.</p>
+<h2><span class="n">4.1</span>Get your bearings</h2>
+<p>Before you move, know where everyone is, and hear Cosmos talk. Once you are within 10 km of it, it stops talking.</p>
+<div class="step"><div><h3><span class="n">1</span>Meet the players</h3><p>Click X36, then TRK 4423, in the Overview. X36 is 20 km ahead of you. TRK 4423 is Cosmos 2612, 15 km away. Double-click each one to see it.</p><div class="do">Overview: click, then double-click</div></div><img alt="" src="img/c-overview.jpg"/></div>
+<div class="step"><div><h3><span class="n">2</span>Read your goals</h3><p>There are five goals. Two lose the game: letting it finish, or escalation reaching 100. The rest are points.</p><div class="do"><kbd>F1</kbd> Campaign, <kbd>Esc</kbd> to close</div></div><img alt="" src="img/campaign.jpg"/></div>
+<div class="step"><div><h3><span class="n">3</span>Listen</h3><p>Open the Listening station and speed up. Its first report comes within about three hours, as a bright stripe at 2,250 MHz.</p><div class="do"><kbd>F2</kbd>, then <kbd>]</kbd> to 600×</div></div><img alt="" src="img/ew-wf.jpg"/></div>
+<div class="step"><div><h3><span class="n">4</span>Identify it</h3><p>Click the recording, find its direction, and identify it. Now you know who is talking, and your track is sharper. Do it within an hour of the burst.</p><div class="do">Click INT-001, <kbd>D</kbd>, <kbd>I</kbd></div></div><img alt="" src="img/ew-sig.jpg"/></div>
+<div class="step"><div><h3><span class="n">5</span>Wait for it to park</h3><p>Cosmos is hopping to its first stop. About three hours in, the log says it has parked 2 km behind X36. That is your moment.</p><div class="do">Watch the events, bottom left</div></div><img alt="" src="img/c-events.jpg"/></div>
+<h2><span class="n">4.2</span>Close in</h2>
+<p>Get alongside it. The planner does the orbital maths; you choose how fast and how much fuel.</p>
+<div class="step"><div><h3><span class="n">6</span>Plot a move</h3><p>The planner opens on TRK 4423. Check its lamps first: if the track is only known to ±10 km, a radar pass or a look will sharpen it.</p><div class="do">Select TRK 4423, <kbd>1</kbd> Plot move</div></div><img alt="" src="img/p-checks.jpg"/></div>
+<div class="step"><div><h3><span class="n">7</span>Pick, then burn</h3><p>BALANCED flies there in 1½ hours for about 2.3 m/s in all. CHEAPEST waits longer for about half that. Either is a sliver of your 260 m/s.</p><div class="do">Balanced or Cheapest, then Burn now</div></div><img alt="" src="img/p-form.jpg"/></div>
+<div class="step"><div><h3><span class="n">8</span>Coast</h3><p>The move shows on the map as PLANNED MEETING with a countdown. Slow time down for the last few minutes.</p><div class="do"><kbd>]</kbd> to 600×, 60× near the end</div></div><img alt="" src="img/p-timeline.jpg"/></div>
+<div class="step"><div><h3><span class="n">9</span>Look at it</h3><p>Close in and in sunlight, the telescope shows the hull. In Earth's shadow it sees nothing, so wait for the Sun.</p><div class="do">Select TRK 4423, <kbd>2</kbd> Look</div></div><img alt="" src="img/look.jpg"/></div>
+<div class="step"><div><h3><span class="n">10</span>Match orbit</h3><p>Arriving isn't stopping. Match orbit cancels the last of your speed so you stay beside it. Stop 1 to 5 km away.</p><div class="do"><kbd>3</kbd> Match orbit, on arrival</div></div><img alt="" src="img/c-actionbar.jpg" style="object-fit:contain"/></div>
+<h2><span class="n">4.3</span>See it off</h2>
+<p>Crowd it at each stop, follow it when it moves, and the third time it gives up.</p>
+<div class="step"><div><h3><span class="n">11</span>Make sure it sees you</h3><p>Crowding only counts if its telescope sees you. Check <span class="q">Sees us</span>: a high number means it does. Then the log says it is moving to the far side of X36. Escalation goes up by 5.</p><div class="do">Selected item: Sees us</div></div><img alt="" src="img/c-selected.jpg"/></div>
+<div class="step"><div><h3><span class="n">12</span>Follow it</h3><p>It moves 8 km off, to the far side of X36. Once it parks, plot a move to it again and match. For a hop of a few km, a small close move is cheapest (see 5.4).</p><div class="do"><kbd>1</kbd> Plot move again, or Tactical</div></div><img alt="" src="img/p-ric.jpg"/></div>
+<div class="step"><div><h3><span class="n">13</span>Mind the gap</h3><p>Stay more than 1 km from it. Inside 1 km, escalation climbs by 12 every hour.</p><div class="do">Keep 1 to 5 km</div></div><img alt="" src="img/c-escal.jpg" style="object-fit:contain"/></div>
+<div class="step"><div><h3><span class="n">14</span>Crowd it a third time</h3><p>It gives up and climbs away. Once it is 200 km from X36, the operation is complete and the debrief opens (see Chapter 7).</p><div class="do">Then read the debrief</div></div><img alt="" src="img/debrief.jpg"/></div>
+<div class="box"><span class="l">If it goes wrong</span><p><b>It moved closer to X36?</b> None of your craft was within 50 km when a stop ended, so it took its next stop at half the distance. <b>Nothing happened when you closed in?</b> It only gives way while parked. Wait for the log to say it has parked, then close within 5 km.</p></div>
 </section>
-<section class="pg">
-<div class="kick">2 · Your first game · Step by step</div>
-<h1>2 · Close in</h1>
-<p class="lede">Get alongside it. The planner does the orbital maths; you pick how fast and how much fuel.</p>
-
-<div class="bd"><div class="wk">
-<div class="wr"><span class="n">6</span><div><h3>Plot a move</h3><p>The planner opens on TRK 4423. Check the lamps: if the track is only known to ±10 km, a radar pass or a look will sharpen it first.</p><span class="do">Select TRK 4423 · <kbd>1</kbd> Plot move</span></div><img alt="" src="img/p-checks.jpg"/></div>
-<div class="wr"><span class="n">7</span><div><h3>Pick, then burn</h3><p>BALANCED flies in 1½ hours for about 2.3 m/s in all. CHEAPEST waits longer for about half that. Either is a sliver of your 260 m/s.</p><span class="do">Balanced or Cheapest · Burn now</span></div><img alt="" src="img/p-form.jpg"/></div>
-<div class="wr"><span class="n">8</span><div><h3>Coast</h3><p>The move shows on the map as PLANNED MEETING with a countdown. Slow down for the last few minutes.</p><span class="do"><kbd>]</kbd> to 600× · 60× near the end</span></div><img alt="" src="img/p-timeline.jpg"/></div>
-<div class="wr"><span class="n">9</span><div><h3>Look at it</h3><p>Close in and in sunlight, the telescope shows the hull. In Earth's shadow it sees nothing: wait for the Sun.</p><span class="do">Select TRK 4423 · <kbd>2</kbd> Look</span></div><img alt="" src="img/look.jpg"/></div>
-<div class="wr"><span class="n">10</span><div><h3>Match orbit</h3><p>Arriving isn't stopping. Match orbit cancels the last of your speed so you stay beside it. Stop 1 to 5 km away.</p><span class="do"><kbd>3</kbd> Match orbit, on arrival</span></div><img alt="" src="img/c-actionbar.jpg" style="object-fit:contain;background:#000"/></div>
-</div></div><div class="foot"><span>Your first game</span><span>15</span></div>
-</section>
-<section class="pg">
-<div class="kick">2 · Your first game · Step by step</div>
-<h1>3 · See it off</h1>
-<p class="lede">Crowd it at each stop, follow it when it moves, and the third time it gives up.</p>
-
-
-<div class="bd"><div class="wk">
-<div class="wr"><span class="n">11</span><div><h3>Make sure it sees you</h3><p>Crowding only counts if its telescope sees you. Check SEES US: high means it does. Then the log says it's moving to the far side of X36. Escalation +5.</p><span class="do">Selected item · Sees us</span></div><img alt="" src="img/c-selected.jpg"/></div>
-<div class="wr"><span class="n">12</span><div><h3>Follow it</h3><p>It moves 8 km off, to the far side of X36. Once it parks, plot a move to it again and match. For a hop of a few km, a small close move is cheapest.</p><span class="do"><kbd>1</kbd> Plot move again · or Tactical</span></div><img alt="" src="img/p-ric.jpg"/></div>
-<div class="wr"><span class="n">13</span><div><h3>Mind the gap</h3><p>Stay more than 1 km from it. Inside 1 km, escalation climbs 12 every hour.</p><span class="do">Keep 1 to 5 km</span></div><img alt="" src="img/c-escal.jpg" style="object-fit:contain;background:#000"/></div>
-<div class="wr"><span class="n">14</span><div><h3>Crowd it a third time</h3><p>It gives up and climbs away. Once it's 200 km from X36, the operation is complete.</p><span class="do">Then the debrief</span></div><img alt="" src="img/debrief.jpg"/></div>
-</div><div class="g2 end">
-<div class="tip"><span class="l">It moved closer to X36?</span>If none of ours is within 50 km when a stop ends, it takes its next stop at half the distance. Stay within 50 km.</div>
-<div class="tip"><span class="l">Nothing happened?</span>It only gives way while parked. Mid-hop, wait for the log to say it has parked, then close within 5 km.</div>
-</div></div><div class="foot"><span>Your first game</span><span>16</span></div>
-</section>
-<section class="pg opener">
-<div class="art" style="background-image:url(img/drag.jpg)"></div>
-<div class="num">3</div>
-<h1>Your tools</h1>
-<p class="lede">One page per job: what the tool is for, how to use it, and what to watch out for.</p>
-<ul><li><span>18</span>Know where it is</li><li><span>19</span>Plan a move</li><li><span>21</span>Small moves</li><li><span>22</span>Look</li><li><span>23</span>Listen</li><li><span>25</span>Being seen</li><li><span>26</span>Radars</li><li><span>27</span>The timeline</li></ul>
-<div class="foot"><span>Part 3</span><span>17</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Know where it is</h1>
-<p class="lede">You never see Cosmos 2612 directly. You see your <b>track</b> on it: a best guess, with a size, that gets less sure every minute it isn't seen.</p>
-
-
-<div class="bd"><div class="g2">
-<div class="fig"><img alt="The Overview." src="img/c-overview.jpg"/><div class="cap"><b>Overview</b> <kbd>F4</kbd>. Every contact, nearest first. Chevrons flow in while it closes on you, out while it opens. A beating dot means a sensor holds it now.</div></div>
-<div class="fig"><img alt="Selected item on TRK 4423." src="img/c-selected.jpg"/><div class="cap"><b>Selected item.</b> What you know about the contact you clicked.</div></div>
-</div><div class="gR">
-<div>
-<h2>Colours</h2>
-<div class="keys">
-<span><i class="dot" style="background:var(--own)"></i>Blue</span><span>Ours</span>
-<span><i class="dot" style="background:var(--prot)"></i>Green</span><span>Ours to protect (X36)</span>
-<span><i class="dot" style="background:var(--host)"></i>Red</span><span>Hostile</span>
-<span><i class="dot" style="background:var(--unk)"></i>Yellow</span><span>Unknown</span>
+<!-- ============================================================ 5 -->
+<section class="chap" data-ch="5" data-title="Your Tools" style="page:ch5">
+<div class="chap-head"><div class="no">Chapter 5</div><h1>Your Tools</h1></div>
+<p class="intro">Each tool in turn: what it is for, how to use it, and what to watch out for.</p>
+<h2><span class="n">5.1</span>Tracks: knowing where it is</h2>
+<p>You never see Cosmos 2612 directly. You see your <b>track</b> on it: a best guess of where it is, with a size, that gets less sure every minute it isn't seen.</p>
+<div class="pair">
+<figure><img alt="The Overview." src="img/c-overview.jpg"/><figcaption><b>Figure 5.1</b>The Overview, <kbd>F4</kbd>. Every contact, nearest first. Chevrons flow in while it closes on you and out while it opens. A beating dot means a sensor holds it now.</figcaption></figure>
+<figure><img alt="Selected item on TRK 4423." src="img/c-selected.jpg"/><figcaption><b>Figure 5.2</b>The Selected item: what you know about the contact you clicked.</figcaption></figure>
 </div>
-<h2 style="margin-top:.2in">Lost sight of it?</h2>
-<p>It stays where you last saw it, dashed and fading, with a chip like <span class="q">Last 2h 14m</span>. After 24 hours unseen the track is dropped.</p>
-</div>
-<div>
-<h2>The four lines that matter</h2>
-<table class="kv">
+<h3><span class="n">5.1.1</span>The four lines that matter</h3>
+<table>
+<tr><th style="width:20%">Line</th><th>What it tells you</th></tr>
 <tr><td>Range</td><td>How far it is from you.</td></tr>
-<tr><td>Motion</td><td>Closing or opening, and how fast.</td></tr>
+<tr><td>Motion</td><td>Whether it is closing or opening, and how fast.</td></tr>
 <tr><td>Sees us</td><td>The chance its telescope sees you on each look. <b>Crowding only works when this is high.</b></td></tr>
 <tr><td>Fix</td><td>How sure you are where it is (±), and how old the last sighting is. <b>Check it before you plan a move.</b></td></tr>
 </table>
-<div class="tip" style="margin-top:12px"><span class="l">A track is a belief</span>±10 km means you could arrive and find empty space. Listen, look or wait for a radar pass to sharpen it.</div>
-</div>
-</div></div><div class="foot"><span>Your tools</span><span>18</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Plan a move</h1>
-<p class="lede">You say where to go. The planner works out every way there over the next day, under full gravity, and shows you the price.</p>
-
-
-<div class="bd"><div class="fig"><img alt="The planner going to TRK 4423." src="img/p-oper.jpg"/><div class="cap">Going to TRK 4423, <b>Balanced</b>: burn now for 1.47 m/s, fly 1 h 30 m, then 0.87 m/s to stop alongside. 2.34 m/s in all.</div></div><div class="g2">
-<div>
-<h2>Four steps</h2>
-<div class="steps">
-<div class="st"><span class="n">1</span><div><h3>Open it</h3><p>Select a contact, press <kbd>1</kbd> or <kbd>F3</kbd>. Or right-click it › Plan intercept.</p></div></div>
-<div class="st"><span class="n">2</span><div><h3>Choose where</h3><p><span class="q">Go to</span>: a craft, an orbit, or the Moon.</p></div></div>
-<div class="st"><span class="n">3</span><div><h3>Choose the trade</h3><p>Fastest, Balanced or Cheapest (right).</p></div></div>
-<div class="st"><span class="n">4</span><div><h3>Burn</h3><p><span class="q">Burn now</span>, or set a time and it fires by itself.</p></div></div>
-</div>
-</div>
-<div>
-<h2>Time or fuel</h2>
-<div class="steps" style="gap:9px">
-<div class="card"><h3>Fastest</h3><p>Gets there soonest you can afford. Costs the most.</p></div>
-<div class="card o"><h3>Balanced · the default</h3><p>A fair trade of time and fuel, counting the stop at the end.</p></div>
-<div class="card"><h3>Cheapest</h3><p>Waits and flies longer for the least fuel. Good when you have time.</p></div>
-</div>
-<div class="tip" style="margin-top:12px"><span class="l">Arriving isn't stopping</span>You coast past at a few tenths of a m/s. Press <kbd>3</kbd> Match orbit when you get there.</div>
-</div>
-</div></div><div class="foot"><span>Your tools</span><span>19</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Check the plan, then burn</h1>
-<p class="lede">Before you burn, the planner checks the plan and draws it. A red lamp stops you; an amber one is a warning worth reading.</p>
-
-
-
-<div class="bd"><div class="fig"><img alt="The planner's checks." src="img/p-checks.jpg"/></div><table class="kv">
+<h3><span class="n">5.1.2</span>Colours</h3>
+<p><span class="dot" style="background:var(--own)"></span><b>Blue</b> is yours. <span class="dot" style="background:var(--prot)"></span><b>Green</b> is yours to protect (X36). <span class="dot" style="background:var(--host)"></span><b>Red</b> is hostile. <span class="dot" style="background:var(--unk)"></span><b>Yellow</b> is unknown.</p>
+<h3><span class="n">5.1.3</span>Losing sight of it</h3>
+<p>When nothing sees it, the track stays where you last saw it, dashed and fading, with a chip such as <span class="q">Last 2h 14m</span>. After 24 hours unseen the track is dropped.</p>
+<div class="box tip"><span class="l">Tip</span><p>A track is a belief. ±10 km means you could arrive and find empty space. Listen, look, or wait for a radar pass to sharpen it before you move.</p></div>
+<h2><span class="n">5.2</span>The planner</h2>
+<p>You say where to go. The planner works out every way there over the next day, under full gravity, and shows you the price of each.</p>
+<figure><img alt="The planner going to TRK 4423." src="img/p-oper.jpg"/><figcaption><b>Figure 5.3</b>Going to TRK 4423 on Balanced: burn now for 1.47 m/s, fly 1 h 30 m, then 0.87 m/s to stop alongside. 2.34 m/s in all.</figcaption></figure>
+<h3><span class="n">5.2.1</span>Planning a move</h3>
+<ol class="steps">
+<li><b>Open it.</b> Select a contact and press <kbd>1</kbd> or <kbd>F3</kbd>. Or right-click the contact and choose <span class="q">Plan intercept</span>.</li>
+<li><b>Choose where.</b> Under <span class="q">Go to</span>, pick a craft, an orbit, or the Moon.</li>
+<li><b>Choose the trade</b> between time and fuel (see below).</li>
+<li><b>Burn.</b> Press <span class="q">Burn now</span>, or set a time and the burn fires by itself.</li>
+</ol>
+<h3><span class="n">5.2.2</span>Time or fuel</h3>
+<table>
+<tr><th style="width:24%">Choice</th><th>What it does</th></tr>
+<tr><td>Fastest</td><td>Gets there the soonest you can afford. Costs the most.</td></tr>
+<tr><td>Balanced (default)</td><td>A fair trade of time and fuel, counting the stop at the end.</td></tr>
+<tr><td>Cheapest</td><td>Waits and flies longer for the least fuel. Good when you have time.</td></tr>
+</table>
+<div class="box warn"><span class="l">Arriving isn't stopping</span><p>At the end of a transfer you coast past the target at a few tenths of a metre a second. Press <kbd>3</kbd> Match orbit when you get there.</p></div>
+<h2><span class="n">5.3</span>Checking a plan and burning</h2>
+<p>Before you burn, the planner checks the plan and draws it. A red lamp stops you; an amber one is a warning worth reading.</p>
+<figure><img alt="The planner's checks." src="img/p-checks.jpg"/><figcaption><b>Figure 5.4</b>The planner's checks.</figcaption></figure>
+<table>
+<tr><th style="width:26%">Check</th><th>When it lights</th></tr>
 <tr><td style="color:var(--host)">Fuel enough</td><td>You can't afford the burn at all.</td></tr>
-<tr><td style="color:var(--unk)">Fuel to stop</td><td>You can get there but not stop. Plan cheaper.</td></tr>
+<tr><td style="color:var(--unk)">Fuel to stop</td><td>You can get there but not stop. Plan a cheaper move.</td></tr>
 <tr><td style="color:var(--host)">Not too low</td><td>The path dips below 122 km, into the air.</td></tr>
 <tr><td style="color:var(--unk)">Arrive ± 10 km</td><td>Your track is too vague to aim well. Sharpen it first; under 5 km passes.</td></tr>
-<tr><td>Seen · cold, warm, seen</td><td>Whether Cosmos can see you right now, and when that changes.</td></tr>
-</table><div class="gL">
-<div class="fig"><img alt="The plan's timeline." src="img/p-timeline.jpg"/><div class="cap">The plan's timeline: diamonds are burns, the range falls to zero at the meeting, and grey marks where you're in shadow.</div></div>
-<div>
-<h2>Reading the picture</h2>
-<div class="keys">
-<span><i class="dot" style="background:#9cc0e6"></i>Soft blue</span><span>Your orbit now</span>
-<span><i class="dot" style="background:#fff"></i>White</span><span>The planned path</span>
-<span><i class="dot" style="background:#d9c08a"></i>Dashed sand</span><span>The orbit you're going to</span>
-<span><i class="dot" style="background:var(--unk)"></i>Dashed amber</span><span>A way you can't afford</span>
-</div>
-<div class="tip" style="margin-top:12px"><span class="l">Refused?</span>If a burn can't be flown, the log says why, for example no path at that time.</div>
-</div>
-</div></div><div class="foot"><span>Your tools</span><span>20</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Small moves up close</h1>
-<p class="lede">Within a few km, you don't plan transfers. You give a small push and watch where it carries you over the next two orbits.</p>
-
-
-
-
-<div class="bd"><div class="fig"><img alt="The Tactical planner." src="img/p-tact.jpg"/><div class="cap"><b>Tactical</b> tab: a push of +0.5 m/s along the orbit, drawn round Cosmos 2612. The amber label marks the closest pass.</div></div><div class="grp"><h2>Orbits don't steer like cars</h2><div class="g3">
-<div class="card o"><span class="tag">Along the orbit (I)</span><h3>Forward makes you drift back</h3><p>Speeding up raises your orbit, and a higher orbit is slower. To drift ahead, push backward.</p></div>
-<div class="card o"><span class="tag">Up or down (R)</span><h3>Makes a loop</h3><p>You swing in an oval round where you were, once an orbit, with no drift. Good for circling a target.</p></div>
-<div class="card o"><span class="tag">Sideways (C)</span><h3>Swings side to side</h3><p>You cross back once an orbit. Rarely needed here.</p></div>
-</div></div><div class="gL">
-<div>
-<h2>Or drag your orbit</h2>
-<p>Grab your own orbit line where you want to burn. Drag <b>along</b> it to speed up or slow down, <b>across</b> it to push out or in. The new orbit swings out in dashed amber with the price. Let go and the burn is set for the next time you pass that point.</p>
-<p class="small">Right-click or <kbd>Esc</kbd> cancels. Hold <kbd>Shift</kbd> to turn the view instead.</p>
-</div>
-<div class="tip"><span class="l">Rule of thumb</span>In low orbit, 0.1 m/s along the track moves you about 1.7 km per orbit. Tiny pushes, patiently, do the work.</div>
-</div></div><div class="foot"><span>Your tools</span><span>21</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Look with the telescope</h1>
-<p class="lede">WATCHMAN-1's telescope is how you see Cosmos for yourself. From far off it's a point of light. Close in, it's a hull you can name.</p>
-
-
-<div class="bd"><div class="fig"><img alt="The telescope view of TRK 4423." src="img/look-full.jpg"/><div class="cap">TRK 4423 at 15 km: <b>Target resolved</b>. Select a contact and press <kbd>2</kbd> or <kbd>I</kbd>; <kbd>Esc</kbd> closes it.</div></div><div class="g2">
-<div>
-<h2>It only sees a target that is</h2>
-<div class="steps" style="gap:9px">
-<div class="st"><span class="n">☀</span><div><h3>In sunlight</h3><p>In Earth's shadow there's nothing to see. The Timeline shows when it's lit.</p></div></div>
-<div class="st"><span class="n">◐</span><div><h3>Not against the Earth</h3><p>The bright Earth behind it washes it out.</p></div></div>
-<div class="st"><span class="n">↔</span><div><h3>Close enough</h3><p>It names a hull inside about 60 km.</p></div></div>
-</div>
-</div>
-<div>
-<h2>It works without you</h2>
-<p>You don't need the view open. Every 10 minutes the telescope looks at everything you track, and each sighting sharpens your track.</p>
-<p>Close in, it also measures range from how big the hull looks: to about 30 m at 5 km.</p>
-<div class="tip"><span class="l">Why staying near pays</span>Radars see Cosmos only on their passes. In between, your telescope keeps the track good, but only on the sunlit part of each orbit.</div>
-</div>
-</div></div><div class="foot"><span>Your tools</span><span>22</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Listen to its radio</h1>
-<p class="lede">Cosmos 2612 reports home in short radio bursts. The Listening station <kbd>F2</kbd> shows each burst arriving live and records it.</p>
-
-
-<div class="bd"><div class="fig"><img alt="The waterfall and spectrum with a burst." src="img/ew-wf.jpg"/><div class="cap">The <b>waterfall</b> (time runs down, newest at the top) and the <b>spectrum</b> under it. Cosmos's burst is the peak at 2,250 MHz in S band.</div></div><div class="gL">
-<div>
-<h2>When it talks</h2>
-<div class="g2" style="gap:10px">
-<div class="card"><h3>Every 3 to 6 hours</h3><p>And once after each move. Each burst lasts 2 minutes.</p></div>
-<div class="card"><h3>Over Russia</h3><p>Only while its ground station can see it, so reports bunch together.</p></div>
-<div class="card r"><h3>Not when you're close</h3><p>Silent while you're within 10 km.</p></div>
-<div class="card r"><h3>Not after a burn</h3><p>Silent for 6 hours after it sees one of ours burn.</p></div>
-</div>
-</div>
-<div>
-<div class="fig"><img alt="The band list." src="img/ew-bands.jpg" style="max-height:2.2in;width:auto"/></div>
-<p class="small" style="margin-top:6px">The station opens on S band, where Cosmos talks. <kbd>B</kbd> steps through the bands.</p>
-<div class="tip"><span class="l">Listen first</span>Hear and identify it while you're still 15 km out. Once you close in, it goes quiet.</div>
-</div>
-</div></div><div class="foot"><span>Your tools</span><span>23</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Identify the signal</h1>
-<p class="lede">A recording is a clue. Work it within an hour and you know who is talking, and where from.</p>
-
-
-
-
-<div class="bd"><div class="fig"><img alt="The recordings list." src="img/ew-list.jpg"/><div class="cap">The recordings list. Status goes <b>Heard → Bearing → Fix → Identified</b>.</div></div><div class="g3">
-<div class="card o"><span class="tag">Step 1</span><h3>Click the recording</h3><p>Wait until the burst has ended. <kbd>↑</kbd> <kbd>↓</kbd> step through the list.</p></div>
-<div class="card o"><span class="tag">Step 2</span><h3>Find direction <kbd>D</kbd></h3><p>A bearing from your receiver. It sharpens the track you already have.</p></div>
-<div class="card o"><span class="tag">Step 3</span><h3>Identify <kbd>I</kbd></h3><p>Names its class and side. Needs a clean copy: at least 15 dB.</p></div>
-</div><div class="fig" style="width:82%;margin:0 auto"><img alt="An identified signal." src="img/ew-sig.jpg"/><div class="cap">INT-001 worked: two dot clusters read as BPSK, and the threat library matches <b>Cosmos 2612</b>.</div></div><div class="g2 end">
-<div class="tip"><span class="l">Too weak?</span>The hint says so. Wait for a stronger report, or get closer, but not within 10 km.</div>
-<div class="tip blue"><span class="l">Shortcut</span><span class="q">Analyse automatically</span> works each recording as it arrives. Handy, but you learn nothing.</div>
-</div></div><div class="foot"><span>Your tools</span><span>24</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Being seen</h1>
-<p class="lede">Cosmos watches you with a small infrared telescope. Here, being seen is mostly good: crowding only works if it can see you.</p>
-
-
-
-<div class="bd"><div class="gL">
-<div class="fig"><img alt="The thermal forecast." src="img/thermal.jpg"/><div class="cap"><b>Thermal forecast</b> <kbd>F7</kbd>: your orbit over the next pass, coloured by how plainly Cosmos sees you.</div></div>
-<div>
-<table class="kv n">
-<tr><td style="color:var(--own)">Cold</td><td>Hidden. It almost never sees you.</td></tr>
-<tr><td style="color:var(--unk)">Warm</td><td>Seen now and then.</td></tr>
-<tr><td style="color:var(--host)">Seen</td><td>Seen on most looks.</td></tr>
+<tr><td>Seen</td><td>Cold, warm or seen: whether Cosmos can see you right now, and when that changes.</td></tr>
 </table>
-<p style="margin-top:10px">The quickest check is <span class="q">Sees us</span> in the Selected item. If it reads 0 %, crowding won't count: wait for a better angle.</p>
-<div class="fig" style="margin-top:10px"><img alt="The Selected item." src="img/c-selected.jpg"/><div class="cap">Select TRK 4423 to see <span class="q">Sees us</span>.</div></div>
-</div>
-</div><div class=""><h2>Reading the forecast</h2>
-<table class="kv">
+<h3><span class="n">5.3.1</span>Reading the picture</h3>
+<figure class="r"><img alt="The plan's timeline." src="img/p-timeline.jpg"/><figcaption><b>Figure 5.5</b>The plan's timeline: diamonds are burns, the range falls to zero at the meeting, and grey marks shadow.</figcaption></figure>
+<p>The planned move is drawn in the 3-D view in four styles:</p>
+<ul>
+<li><b>Soft blue:</b> your orbit now.</li>
+<li><b>White:</b> the planned path.</li>
+<li><b>Dashed sand:</b> the orbit you are going to.</li>
+<li><b>Dashed amber:</b> a way you can't afford.</li>
+</ul>
+<p>If a burn can't be flown, the event log says why, for example that there is no path at that time.</p>
+<div class="clear"></div>
+<h2><span class="n">5.4</span>Small moves up close</h2>
+<p>Within a few kilometres you don't plan transfers. You give a small push and watch where it carries you over the next two orbits. Open the <span class="q">Tactical</span> tab in the planner.</p>
+<figure><img alt="The Tactical planner." src="img/p-tact.jpg"/><figcaption><b>Figure 5.6</b>The Tactical tab: a push of +0.5 m/s along the orbit, drawn round Cosmos 2612. The amber label marks the closest pass.</figcaption></figure>
+<h3><span class="n">5.4.1</span>Orbits don't steer like cars</h3>
+<table>
+<tr><th style="width:26%">Push</th><th>What happens</th></tr>
+<tr><td>Along the orbit (I)</td><td>Forward makes you drift back. Speeding up raises your orbit, and a higher orbit is slower. To drift ahead, push backward.</td></tr>
+<tr><td>Up or down (R)</td><td>You swing in an oval round where you were, once an orbit, with no drift. Good for circling a target.</td></tr>
+<tr><td>Sideways (C)</td><td>You swing side to side, crossing back once an orbit. Rarely needed here.</td></tr>
+</table>
+<h3><span class="n">5.4.2</span>Dragging your orbit</h3>
+<p>You can also plan a burn by hand. Grab your own orbit line where you want to burn. Drag <b>along</b> it to speed up or slow down, or <b>across</b> it to push out or in. The new orbit swings out in dashed amber with its price. Let go and the burn is set for the next time you pass that point. Right-click or <kbd>Esc</kbd> cancels; hold <kbd>Shift</kbd> to turn the view instead.</p>
+<div class="box tip"><span class="l">Rule of thumb</span><p>In low orbit, 0.1 m/s along the track moves you about 1.7 km per orbit. Tiny pushes, made patiently, do the work.</p></div>
+<h2><span class="n">5.5</span>The telescope</h2>
+<p>WATCHMAN-1's telescope is how you see Cosmos for yourself. From far off it is a point of light. Close in, it is a hull you can name. Select a contact and press <kbd>2</kbd> or <kbd>I</kbd> to look; <kbd>Esc</kbd> closes the view.</p>
+<figure><img alt="The telescope view of TRK 4423." src="img/look-full.jpg"/><figcaption><b>Figure 5.7</b>TRK 4423 at 15 km: Target resolved.</figcaption></figure>
+<h3><span class="n">5.5.1</span>When it can see</h3>
+<p>The telescope only sees a target that is:</p>
+<ul>
+<li><b>In sunlight.</b> In Earth's shadow there is nothing to see. The Timeline shows when it is lit.</li>
+<li><b>Not against the Earth.</b> The bright Earth behind it washes it out.</li>
+<li><b>Close enough.</b> It names a hull inside about 60 km.</li>
+</ul>
+<h3><span class="n">5.5.2</span>It works without you</h3>
+<p>You don't need the view open. Every 10 minutes the telescope looks at everything you track, and each sighting sharpens your track. Close in, it also measures range from how big the hull looks: to about 30 m at 5 km.</p>
+<div class="box"><span class="l">Why staying near pays</span><p>Radars see Cosmos only on their passes. In between, your telescope keeps the track good, but only on the sunlit part of each orbit.</p></div>
+<h2><span class="n">5.6</span>The listening station</h2>
+<p>Cosmos 2612 reports home in short radio bursts. The Listening station, <kbd>F2</kbd>, shows each burst arriving live and records it.</p>
+<figure><img alt="The waterfall and spectrum with a burst." src="img/ew-wf.jpg"/><figcaption><b>Figure 5.8</b>The waterfall (time runs down, newest at the top) and the spectrum under it. Cosmos's burst is the peak at 2,250 MHz in S band.</figcaption></figure>
+<h3><span class="n">5.6.1</span>When it talks</h3>
+<figure class="r s"><img alt="The band list." src="img/ew-bands.jpg"/><figcaption><b>Figure 5.9</b>The bands. <kbd>B</kbd> steps through them.</figcaption></figure>
+<ul>
+<li><b>Every 3 to 6 hours,</b> and once after each move. Each burst lasts 2 minutes.</li>
+<li><b>Only over Russia,</b> while its ground station can see it, so reports bunch together.</li>
+<li><b>Never when you are close.</b> It is silent while you are within 10 km.</li>
+<li><b>Never right after a burn.</b> It is silent for 6 hours after it sees one of your burns.</li>
+</ul>
+<p>The station opens on S band, where Cosmos talks.</p>
+<div class="box tip clear"><span class="l">Tip</span><p>Listen first. Hear and identify it while you are still 15 km out. Once you close in, it goes quiet.</p></div>
+<h2><span class="n">5.7</span>Identifying a signal</h2>
+<p>A recording is a clue. Work it within an hour and you know who is talking, and where from.</p>
+<figure><img alt="The recordings list." src="img/ew-list.jpg"/><figcaption><b>Figure 5.10</b>The recordings list. Status goes Heard, Bearing, Fix, Identified.</figcaption></figure>
+<ol class="steps">
+<li><b>Click the recording.</b> Wait until the burst has ended. <kbd>↑</kbd> and <kbd>↓</kbd> step through the list.</li>
+<li><b>Find its direction,</b> <kbd>D</kbd>. This takes a bearing from your receiver, which sharpens the track you already have.</li>
+<li><b>Identify it,</b> <kbd>I</kbd>. This names its class and side. It needs a clean copy: at least 15 dB.</li>
+</ol>
+<figure class="mid"><img alt="An identified signal." src="img/ew-sig.jpg"/><figcaption><b>Figure 5.11</b>INT-001 worked: two dot clusters read as BPSK, and the threat library matches Cosmos 2612.</figcaption></figure>
+<p>If the copy is too weak, the hint says so. Wait for a stronger report, or get closer, but not within 10 km. <span class="q">Analyse automatically</span> works each recording as it arrives. It is handy, but you learn nothing.</p>
+<h2><span class="n">5.8</span>Being seen</h2>
+<p>Cosmos watches you with a small infrared telescope. In CLOSE PASS, being seen is mostly good: crowding only works if it can see you.</p>
+<figure class="mid" style="width:60%"><img alt="The thermal forecast." src="img/thermal.jpg"/><figcaption><b>Figure 5.12</b>The Thermal forecast, <kbd>F7</kbd>: your orbit over the next pass, coloured by how plainly Cosmos sees you.</figcaption></figure>
+<ul>
+<li><b style="color:var(--own)">Cold:</b> hidden. It almost never sees you.</li>
+<li><b style="color:var(--unk)">Warm:</b> seen now and then.</li>
+<li><b style="color:var(--host)">Seen:</b> seen on most looks.</li>
+</ul>
+<p>The quickest check is <span class="q">Sees us</span> in the Selected item. If it reads 0 %, crowding won't count: wait for a better angle.</p>
+<h3><span class="n">5.8.1</span>Reading the forecast</h3>
+<table>
+<tr><th style="width:24%">Line</th><th>What it tells you</th></tr>
 <tr><td>Your heat now</td><td>Hidden, Detected or Seen, with the range it sees you best from.</td></tr>
-<tr><td>In shadow</td><td>Whether you're in Earth's shadow now, and when the Sun comes back.</td></tr>
-<tr><td>Quiet burn</td><td>When a burn would go unseen. "None" means any burn this orbit shows.</td></tr>
-<tr><td>Hidden for</td><td>How long you've been out of sight.</td></tr>
-</table></div><div class="g3">
-<div class="card g"><h3>Seen = good, when crowding</h3><p>Park within 5 km while it sees you, and it gives way.</p></div>
-<div class="card r"><h3>Burns are seen</h3><p>If it sees you burn, it goes quiet on the radio for 6 hours. Listen first, then move.</p></div>
-<div class="card"><h3>Shadow hides you</h3><p>Arriving in Earth's shadow may not count until the Sun comes round.</p></div>
-</div></div><div class="foot"><span>Your tools</span><span>25</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Radars and your track</h1>
-<p class="lede">Five real ground radars fix Cosmos to within metres, but only while it passes overhead. Between passes, your track drifts.</p>
-
-
-
-
-
-<div class="bd"><table class="kv">
+<tr><td>In shadow</td><td>Whether you are in Earth's shadow now, and when the Sun comes back.</td></tr>
+<tr><td>Quiet burn</td><td>When a burn would go unseen. “None” means any burn this orbit shows.</td></tr>
+<tr><td>Hidden for</td><td>How long you have been out of sight.</td></tr>
+</table>
+<ul>
+<li><b>Being seen helps when crowding.</b> Park within 5 km while it sees you, and it gives way.</li>
+<li><b>Burns are seen.</b> If it sees you burn, it goes quiet on the radio for 6 hours. Listen first, then move.</li>
+<li><b>Shadow hides you.</b> Arriving in Earth's shadow may not count until the Sun comes round.</li>
+</ul>
+<h2><span class="n">5.9</span>Radars and your track</h2>
+<p>Five real ground radars fix Cosmos to within metres, but only while it passes overhead. Between passes, your track drifts.</p>
+<table>
+<tr><th style="width:26%">Radar</th><th>Site and reach</th></tr>
 <tr><td>PFISR · Alaska</td><td>Poker Flat. Looks high: from 45° up, out to 3,000 km.</td></tr>
 <tr><td>MSR · Texas</td><td>LeoLabs Midland. From 30° up, out to 3,000 km.</td></tr>
 <tr><td>ASR · Arizona</td><td>LeoLabs Arizona. From 20° up, out to 3,000 km.</td></tr>
 <tr><td>KSR · New Zealand</td><td>LeoLabs Kiwi. From 40° up, out to 1,500 km.</td></tr>
 <tr><td>FENCE · Kwajalein</td><td>The Space Fence. From 20° up, out to 3,000 km.</td></tr>
-</table><div class="fig"><img alt="Radar passes on the Timeline." src="img/tl-wide.jpg"/><div class="cap">The Timeline row <span class="q">Our radars see TRK 4423</span> shows each pass. A pass lasts a few minutes; there can be hours between them.</div></div><div class="grp"><h2>How a track lives</h2><div class="g3">
-<div class="card g"><span class="tag">Sharpens</span><h3>Each sighting</h3><p>Radar, telescope or radio bearing: each one tightens it.</p></div>
-<div class="card y"><span class="tag">Widens</span><h3>Between sightings</h3><p>Small unknowns grow. Unseen burns widen it more.</p></div>
-<div class="card r"><span class="tag">Dropped</span><h3>After 24 hours</h3><p>Unseen that long, or too vague to say where it is.</p></div>
-</div></div><div class="gR">
-<div class="fig"><img alt="PFISR's Database page." src="img/db-pfisr.jpg" style="max-height:2.3in;object-fit:cover;object-position:top"/></div>
-<div><h3>Each radar has a page</h3><p>Open the Database <kbd>F5</kbd> and pick a radar to see where it is, how high it looks, how far it reaches, and the source for each number.</p><div class="tip" style="margin-top:10px"><span class="l">Plan round the passes</span>Arrive just after a radar pass and your track is at its sharpest. Arrive after a long gap and check the ± first.</div></div>
-</div></div><div class="foot"><span>Your tools</span><span>26</span></div>
-</section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>The timeline</h1>
-<p class="lede">Along the bottom: the next hours, on the same clock as everything else. It tells you when to act.</p>
-
-
-
-<div class="bd"><div class="fig"><img alt="The Timeline." src="img/tl-rows.jpg"/><div class="cap">The boxed time is now. <span class="q">Branch from now</span> and <span class="q">+ Add row</span> sit on its title line.</div></div><div class="g2">
-<table class="kv w">
-<tr><td>My decisions</td><td>Burns you've set, and the move the planner has open.</td></tr>
+</table>
+<figure><img alt="Radar passes on the Timeline." src="img/tl-wide.jpg"/><figcaption><b>Figure 5.13</b>The Timeline row <span class="q">Our radars see TRK 4423</span> shows each pass. A pass lasts a few minutes; there can be hours between them.</figcaption></figure>
+<h3><span class="n">5.9.1</span>How a track lives</h3>
+<ul>
+<li><b>It sharpens</b> with each sighting: a radar pass, a telescope look or a radio bearing.</li>
+<li><b>It widens</b> between sightings, as small unknowns grow. Unseen burns widen it more.</li>
+<li><b>It is dropped</b> after 24 hours unseen, or when it is too vague to say where it is.</li>
+</ul>
+<figure class="r s"><img alt="PFISR's Database page." src="img/db-pfisr.jpg"/><figcaption><b>Figure 5.14</b>PFISR in the Database.</figcaption></figure>
+<p>Each radar has its own page in the Database, <kbd>F5</kbd>: where it is, how high it looks, how far it reaches, and the source for each number.</p>
+<div class="box tip"><span class="l">Tip</span><p>Arrive just after a radar pass and your track is at its sharpest. After a long gap, check the ± before you move.</p></div>
+<div class="clear"></div>
+<h2><span class="n">5.10</span>The timeline</h2>
+<p>Along the bottom of the screen is the Timeline: the next hours, on the same clock as everything else. It tells you when to act.</p>
+<figure><img alt="The Timeline." src="img/tl-rows.jpg"/><figcaption><b>Figure 5.15</b>The Timeline. The boxed time is now.</figcaption></figure>
+<table>
+<tr><th style="width:32%">Row</th><th>What it shows</th></tr>
+<tr><td>My decisions</td><td>Burns you have set, and the move the planner has open.</td></tr>
 <tr><td>TRK 4423</td><td>Its closest pass to anything, such as <span class="q">Closest · 2 km · X36</span>.</td></tr>
 <tr><td>Our radars see TRK 4423</td><td>Each radar pass.</td></tr>
-<tr><td>WCH-1 in sunlight</td><td>When you're lit. The gaps are Earth's shadow.</td></tr>
+<tr><td>WCH-1 in sunlight</td><td>When you are lit. The gaps are Earth's shadow.</td></tr>
 </table>
-<div>
-<h2>Add a row</h2>
-<p><span class="q">+ Add row</span> adds up to nine: distances, heights, sunlight, when each radar sees each craft, when you're within 1, 5 or 10 km of Cosmos.</p>
-<div class="tip"><span class="l">Worth adding</span>WCH-1 within 5 km of TRK 4423. It shows exactly when you're crowding.</div>
+<h3><span class="n">5.10.1</span>Adding rows</h3>
+<p><span class="q">+ Add row</span> adds up to nine more rows: distances, heights, sunlight, when each radar sees each craft, and when you are within 1, 5 or 10 km of Cosmos. The most useful one is <span class="q">WCH-1 within 5 km of TRK 4423</span>: it shows exactly when you are crowding.</p>
+<h3><span class="n">5.10.2</span>Branching</h3>
+<figure><img alt="Run tabs on the Timeline." src="img/tl-branch.jpg"/><figcaption><b>Figure 5.16</b>Two runs on the Timeline.</figcaption></figure>
+<p><span class="q">Branch from now</span> saves this moment as Run 1 and plays on as Run 2. Click a run's tab to go back exactly where you left it. Branch before a big move. Branches aren't saved to disk.</p>
+<h3><span class="n">5.10.3</span>Events</h3>
+<p>The event log at the bottom left uses four levels. <b>Warning:</b> act now. <b>Caution:</b> worth knowing, such as losing sight. <b>Nominal:</b> good news, for example it gave way. <b>Advisory:</b> for the record.</p>
+<h2><span class="n">5.11</span>Other windows</h2>
+<p>You can win without these, but they answer the questions the main screen doesn't.</p>
+<div class="pair">
+<figure><img alt="" src="img/campaign.jpg"/><figcaption><b>Figure 5.17</b>Campaign, <kbd>F1</kbd>: your five goals, each ticked, crossed or open, with progress so far.</figcaption></figure>
+<figure><img alt="" src="img/db.jpg" style="max-height:2.3in;object-fit:cover;object-position:top"/><figcaption><b>Figure 5.18</b>Database, <kbd>F5</kbd>: a page on every craft and radar, with the source of each number.</figcaption></figure>
 </div>
-</div><div class="g2">
-<div class="card b"><div class="fig" style="margin-bottom:8px"><img alt="Run tabs on the Timeline." src="img/tl-branch.jpg"/></div><h3>Branch from now</h3><p>Saves this moment as Run 1 and plays on as Run 2. Click a run's tab to go back exactly where you left it. Branch before a big move. Branches aren't saved to disk.</p></div>
-<div class="card"><h3>Events, bottom left</h3><p><b>Warning</b>: act now. <b>Caution</b>: worth knowing, like losing sight. <b>Nominal</b>: good news, it gave way. <b>Advisory</b>: for the record.</p></div>
-</div></div><div class="foot"><span>Your tools</span><span>27</span></div>
+<div class="pair">
+<figure><img alt="" src="img/signals.jpg"/><figcaption><b>Figure 5.19</b>Signals: the newest recordings. Click one to open the Listening station on it.</figcaption></figure>
+<figure><img alt="" src="img/c-layers.jpg" style="max-height:2.3in;object-fit:cover;object-position:top"/><figcaption><b>Figure 5.20</b>Map layers, <kbd>L</kbd>: tick what the 3-D view draws.</figcaption></figure>
+</div>
+<p><b>Solar system</b> (<span class="q">Stations › Solar system</span>) is a live chart of the Sun and planets, with each one's distance and the cheapest trip there. <b>The sums:</b> click <span class="q">SNR here ⓘ</span> in the Listening station to see the radio maths, term by term.</p>
 </section>
-<section class="pg">
-<div class="kick">3 · Your tools</div>
-<h1>Other windows</h1>
-<p class="lede">You can win without these, but they answer the questions the main screen doesn't.</p>
-
-<div class="bd"><div class="g2" style="grid-template-rows:auto auto auto">
-<div class="card"><div class="fig" style="margin-bottom:8px"><img alt="" src="img/campaign.jpg"/></div><h3>Campaign <kbd>F1</kbd></h3><p>Your five goals, each ticked, crossed or open, with progress so far.</p></div>
-<div class="card"><div class="fig" style="margin-bottom:8px"><img alt="" src="img/db.jpg" style="max-height:1.3in;object-fit:cover;object-position:top"/></div><h3>Database <kbd>F5</kbd></h3><p>A page on every craft and radar: what it carries, how much fuel, how far it sees, and where the numbers come from.</p></div>
-<div class="card"><div class="fig" style="margin-bottom:8px"><img alt="" src="img/signals.jpg"/></div><h3>Signals</h3><p>A small window with the newest recordings. Click one to open the Listening station on it.</p></div>
-<div class="card"><div class="fig" style="margin-bottom:8px"><img alt="" src="img/c-layers.jpg" style="max-height:1.3in;object-fit:cover;object-position:top"/></div><h3>Map layers <kbd>L</kbd></h3><p>Tick what the 3-D view draws: planned moves, orbits, detections, the close-up frame.</p></div>
-<div class="card"><h3>Solar system</h3><p>Stations › Solar system. A live chart of the Sun and planets, with each one's distance and the cheapest trip there.</p></div>
-<div class="card"><h3>The sums</h3><p>Click <span class="q">SNR here ⓘ</span> in the Listening station to see the radio maths, term by term. Military terms add formulas to hover cards.</p></div>
-</div></div><div class="foot"><span>Your tools</span><span>28</span></div>
+<!-- ============================================================ 6 -->
+<section class="chap" data-ch="6" data-title="Playing Well" style="page:ch6">
+<div class="chap-head"><div class="no">Chapter 6</div><h1>Playing Well</h1></div>
+<p class="intro">Twelve things good players learn, most of them the hard way.</p>
+<ol class="steps">
+<li><b>Listen first.</b> It stops talking once you are within 10 km or it sees you burn. Identify it from 15 km out.</li>
+<li><b>Move when it parks.</b> A target that is mid-hop is a moving goal. Wait for “has parked”, then plan.</li>
+<li><b>Always match.</b> A transfer passes by. Forget Match orbit and you sail past at a metre a second.</li>
+<li><b>Use the sunlight.</b> Your telescope only sees a lit target. The Timeline's sunlight row tells you when.</li>
+<li><b>Be seen when crowding.</b> Check <span class="q">Sees us</span>. Arriving in shadow may not count until the Sun comes round.</li>
+<li><b>Check the fix.</b> ±10 km means you may arrive somewhere empty. Sharpen the track first.</li>
+<li><b>Move cheap and early.</b> Small moves early cost less than big ones late. Let the orbit do the work.</li>
+<li><b>Keep 1 to 5 km.</b> It is the sweet spot: it gives way, and tension rises only 5 at a time.</li>
+<li><b>Branch before big moves.</b> Try it; if it goes wrong, go back to Run 1.</li>
+<li><b>Stay within 50 km.</b> Out of reach, it creeps toward X36 and can enter the keep-out.</li>
+<li><b>Pick the right speed.</b> 60× near it, 600× coasting, 3K× to wait out a stop. Pause to think.</li>
+<li><b>Mind the clock.</b> Three crowdings, a stop apart, fit in two days only if you start early.</li>
+</ol>
 </section>
-<section class="pg opener">
-<div class="art" style="background-image:url(img/gizmo.jpg)"></div>
-<div class="num">4</div>
-<h1>Reference</h1>
-<p class="lede">Tips, answers, the keys on one page, and every word explained.</p>
-<ul><li><span>30</span>Playing well</li><li><span>31</span>The debrief</li><li><span>32</span>Physics you'll feel</li><li><span>33</span>Problems and answers</li><li><span>34</span>Cheat sheet</li><li><span>35</span>Glossary</li></ul>
-<div class="foot"><span>Part 4</span><span>29</span></div>
-</section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>Playing well</h1>
-<p class="lede">Twelve things good players learn, most of them the hard way.</p>
-
-<div class="bd"><div class="g2 tips12" style="grid-auto-rows:1fr;gap:.13in .22in">
-<div class="card"><span class="tag">01</span><h3>Listen first</h3><p>It stops talking once you're within 10 km or it sees you burn. Identify it from 15 km out.</p></div>
-<div class="card"><span class="tag">02</span><h3>Move when it parks</h3><p>A target mid-hop is a moving goal. Wait for "has parked", then plan.</p></div>
-<div class="card"><span class="tag">03</span><h3>Always match</h3><p>A transfer passes by. Forget Match orbit and you sail past at a metre a second.</p></div>
-<div class="card"><span class="tag">04</span><h3>Use the sunlight</h3><p>Your telescope only sees a lit target. The Timeline's sunlight row tells you when.</p></div>
-<div class="card"><span class="tag">05</span><h3>Be seen when crowding</h3><p>Check Sees us. Arriving in shadow may not count until the Sun comes round.</p></div>
-<div class="card"><span class="tag">06</span><h3>Check the fix</h3><p>±10 km means you may arrive somewhere empty. Sharpen the track first.</p></div>
-<div class="card"><span class="tag">07</span><h3>Cheap and early</h3><p>Small moves early cost less than big ones late. Let the orbit do the work.</p></div>
-<div class="card"><span class="tag">08</span><h3>1 to 5 km</h3><p>The sweet spot: it gives way, and tension rises only 5 a time.</p></div>
-<div class="card"><span class="tag">09</span><h3>Branch before big moves</h3><p>Try it; if it goes wrong, go back to Run 1.</p></div>
-<div class="card"><span class="tag">10</span><h3>Stay within 50 km</h3><p>Out of reach, it creeps toward X36 and can enter the keep-out.</p></div>
-<div class="card"><span class="tag">11</span><h3>Pick the right speed</h3><p>60× near it, 600× coasting, 3K× to wait out a stop. Pause to think.</p></div>
-<div class="card"><span class="tag">12</span><h3>Mind the clock</h3><p>Three crowdings, a stop apart, fit in two days only if you start early.</p></div>
-</div></div><div class="foot"><span>Reference</span><span>30</span></div>
-</section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>The debrief</h1>
-<p class="lede">When the operation ends, the view holds on the deciding moment, then the debrief shows what happened and how you scored.</p>
-
-
-
-<div class="bd"><div class="fig"><img alt="The debrief." src="img/debrief.jpg"/></div><div class="g2">
-<div>
-<h2>What it shows</h2>
-<table class="kv">
-<tr><td>The result</td><td>And the one line that decided it.</td></tr>
-<tr><td>Score / 100</td><td>Each goal's points, final escalation, how long it took.</td></tr>
+<!-- ============================================================ 7 -->
+<section class="chap" data-ch="7" data-title="The Debrief" style="page:ch7">
+<div class="chap-head"><div class="no">Chapter 7</div><h1>The Debrief</h1></div>
+<p class="intro">When the operation ends, the view holds on the deciding moment. Then the debrief shows what happened and how you scored.</p>
+<figure class="mid"><img alt="The debrief." src="img/debrief.jpg"/><figcaption><b>Figure 7.1</b>The debrief after a win.</figcaption></figure>
+<h2><span class="n">7.1</span>What it shows</h2>
+<table>
+<tr><th style="width:26%">Part</th><th>Contents</th></tr>
+<tr><td>The result</td><td>The outcome, and the one line that decided it.</td></tr>
+<tr><td>Score / 100</td><td>Each goal's points, the final escalation, and how long it took.</td></tr>
 <tr><td>What happened</td><td>A replay, and every event about Cosmos. Click a line to jump there.</td></tr>
 <tr><td>Advice</td><td>One tip for each goal you missed.</td></tr>
 </table>
+<h2><span class="n">7.2</span>The replay</h2>
+<p>X36 sits in the middle with its 1 km keep-out ring. Your path is blue, Cosmos's is red, and the closest moment is ringed. <span class="q">Play</span> runs the whole mission in 20 seconds; <span class="q">Closest</span> jumps to the closest moment. The wheel zooms and dragging moves the view.</p>
+<div class="box"><span class="l">Note</span><p>Leaving the debrief ends the game and deletes the save.</p></div>
+</section>
+<!-- ============================================================ 8 -->
+<section class="chap" data-ch="8" data-title="Physics You'll Feel" style="page:ch8">
+<div class="chap-head"><div class="no">Chapter 8</div><h1>Physics You'll Feel</h1></div>
+<p class="intro">Everything in xGEO is computed from real physics. You don't need the equations, but these six ideas explain what you see.</p>
+<h2><span class="n">8.1</span>Falling round the Earth</h2>
+<p>An orbit is a fall that keeps missing the ground. At 540 km you move at 7.6 km/s and go round in 95 minutes. Everything near you falls the same way, so up close things barely move relative to each other.</p>
+<h2><span class="n">8.2</span>Faster means slower</h2>
+<p>Push forward and you climb on the far side of the Earth. A higher orbit takes longer, so you end up behind. To catch something ahead of you, slow down first.</p>
+<h2><span class="n">8.3</span>Fuel is speed</h2>
+<p>Fuel is counted as the change in speed it can buy, called Δv. WATCHMAN-1 has about 260 m/s. A move to a craft 15 km away costs 2 or 3 m/s. Going to a geostationary orbit would cost thousands.</p>
+<h2><span class="n">8.4</span>Light and shadow</h2>
+<p>Up to a third of each orbit is in the Earth's shadow. A telescope sees by reflected sunlight, so in shadow a satellite vanishes. Infrared sees heat, which fades more slowly.</p>
+<h2><span class="n">8.5</span>Radio fades with distance</h2>
+<p>Twice as far means a quarter as strong. Whether you hear a burst depends on power, antennas, distance and noise. Identifying it needs a clean copy, 15 dB above the noise.</p>
+<h2><span class="n">8.6</span>Knowing isn't seeing</h2>
+<p>Your track is a best estimate with an honest size. Lose sight and the ring grows; a radar pass or a look shrinks it. The Earth's bulge and the Sun and Moon all pull, so paths aren't perfect ellipses.</p>
+</section>
+<!-- ============================================================ 9 -->
+<section class="chap" data-ch="9" data-title="Problems and Answers" style="page:ch9">
+<div class="chap-head"><div class="no">Chapter 9</div><h1>Problems and Answers</h1></div>
+<p class="intro">The usual snags, and what to do about them.</p>
+<div class="faq">
+<h3>The F keys do something else</h3><p>Click inside the game once. The same windows are also on the Stations menu.</p>
+<h3>Match orbit is grey</h3><p>Select a contact and get within 5,000 km of it. Hover over the button: the card says what is missing.</p>
+<h3>I can't hear anything</h3><p>Reports come every 3 to 6 hours, only over Russia, and never while you are within 10 km. Run at 600× and watch the waterfall.</p>
+<h3>Identify won't work</h3><p>Wait for the burst to end. It needs 15 dB and must be less than an hour old.</p>
+<h3>The telescope sees nothing</h3><p>The target is in shadow, or the Earth is behind it. Wait for the sunlight row on the Timeline.</p>
+<h3>I crowded it and nothing happened</h3><p>It must be parked, you must be within 5 km, and it must see you (<span class="q">Sees us</span>).</p>
+<h3>The planner says it can't</h3><p>Nothing in the next day is affordable, or every path dips too low. Try another target, or wait.</p>
+<h3>The game is slow</h3><p>Close windows you don't need, turn off ship shadows, or use a smaller browser window.</p>
+<h3>Where is my save?</h3><p>Use <span class="q">Continue</span> on the title screen. The save lives in your browser's storage for this site.</p>
+<h3>I found a bug</h3><p>Use <span class="q">Report a bug</span> on the xGEO site. Say what you did, what you expected, what happened, and the mission time.</p>
+</div>
+<div class="box"><span class="l">What Esc does, in order</span><p>It closes a menu; cancels an orbit drag; leaves a close-up; closes the telescope; closes the newest window; and, with nothing open, saves and goes to the title screen.</p></div>
+</section>
+<!-- ============================================================ 10 -->
+<section class="chap" data-ch="10" data-title="For Tinkerers" style="page:ch10">
+<div class="chap-head"><div class="no">Chapter 10</div><h1>For Tinkerers</h1></div>
+<p class="intro">xGEO is a simulation first. Three pages on the title screen let you change the numbers and test your plans.</p>
+<h2><span class="n">10.1</span>Edit</h2>
+<p>Change the scenario's main numbers, then press <span class="q">Play edited</span>. The numbers come in five groups:</p>
+<table>
+<tr><th style="width:25%">Group</th><th>What you can change</th></tr>
+<tr><td>Start</td><td>Where WATCHMAN-1 and Cosmos start, the catalogue error, the operation's length.</td></tr>
+<tr><td>WATCHMAN-1</td><td>Propellant, exhaust speed, telescope size.</td></tr>
+<tr><td>Cosmos 2612's behaviour</td><td>How close counts as crowding, how far it evades, how many times, when it feels unwatched, its closest approach.</td></tr>
+<tr><td>Rules and tension</td><td>The keep-out, how good a track must be, tension per crowding and per hour, when it leaves, when it's war.</td></tr>
+<tr><td>Score weights</td><td>The points for each of the five goals.</td></tr>
+</table>
+<h2><span class="n">10.2</span>Study</h2>
+<p>Play each plan many times (Do nothing, Shadow, Guard) and compare how often each wins. Each run redraws Cosmos's habits, so luck shows up. Study is in the desktop program only.</p>
+<h2><span class="n">10.3</span>Library</h2>
+<p>Every source the numbers rest on, with why it was chosen. In the game it is under Help.</p>
+<p><span class="q">Start scenario</span> always plays the scenario as published; only <span class="q">Play edited</span> uses your changes. And a study tells you which plan does better in this model, not what would happen in real life.</p>
+<h2><span class="n">10.4</span>Real and invented</h2>
+<p>ICEYE-X36 and Cosmos 2612 are real satellites, flown from their public orbits and published specifications. The five ground radars are real sites. WATCHMAN-1 is invented, loosely modelled on the US GSSAP inspectors, and what happens in the game is fiction. Their operators have not reviewed or endorsed this game.</p>
+<p>xGEO Core, the engine under the game, is open source. Its Research Edition describes every model and the checks that hold it to its sources. Both are on the xGEO site.</p>
+</section>
+<!-- ============================================================ A -->
+<section class="chap" data-ch="A" data-title="Keys and Cheat Sheet" style="page:chA">
+<div class="chap-head"><div class="no">Appendix A</div><h1>Keys and Cheat Sheet</h1></div>
+<div class="pair" style="break-inside:auto;align-items:start">
+<div>
+<table style="margin-top:0">
+<tr><th>Key</th><th>Does</th></tr>
+<tr><td><kbd>Space</kbd></td><td>Pause / resume</td></tr>
+<tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Slower / faster</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Plot move · Look · Match orbit</td></tr>
+<tr><td><kbd>F1</kbd></td><td>Campaign</td></tr>
+<tr><td><kbd>F2</kbd></td><td>Listening station</td></tr>
+<tr><td><kbd>F3</kbd></td><td>Planner</td></tr>
+<tr><td><kbd>F4</kbd></td><td>Overview</td></tr>
+<tr><td><kbd>F5</kbd></td><td>Database</td></tr>
+<tr><td><kbd>F7</kbd></td><td>Thermal forecast</td></tr>
+<tr><td><kbd>L</kbd></td><td>Map layers</td></tr>
+<tr><td><kbd>I</kbd></td><td>Telescope</td></tr>
+<tr><td><kbd>F</kbd></td><td>Close-up on the selection</td></tr>
+<tr><td><kbd>Tab</kbd></td><td>Next object</td></tr>
+<tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <kbd>Q</kbd><kbd>E</kbd></td><td>Turn and zoom the view</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Back, close, or the menu</td></tr>
+</table>
+<table>
+<tr><th>Listening station</th><th>Does</th></tr>
+<tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Pick a recording</td></tr>
+<tr><td><kbd>D</kbd></td><td>Find direction</td></tr>
+<tr><td><kbd>I</kbd></td><td>Identify (needs 15 dB)</td></tr>
+<tr><td><kbd>B</kbd></td><td>Next band</td></tr>
+</table>
 </div>
 <div>
-<h2>The replay</h2>
-<p>X36 sits in the middle with its 1 km keep-out ring. Your path is blue, Cosmos's red, and the closest moment is ringed.</p>
-<div class="keys">
-<span><span class="q">Play</span></span><span>The whole mission in 20 seconds</span>
-<span><span class="q">Closest</span></span><span>Jump to the closest moment</span>
-<span><kbd>Wheel</kbd> <kbd>Drag</kbd></span><span>Zoom and move</span>
+<h3 style="margin-top:0">A winning order</h3>
+<ol class="steps">
+<li>Click X36, then TRK 4423 in the Overview.</li>
+<li><kbd>F2</kbd>, and <kbd>]</kbd> to 600×: wait for its report.</li>
+<li>Click the recording, then <kbd>D</kbd> and <kbd>I</kbd>.</li>
+<li>Wait for “has parked”.</li>
+<li>Select TRK 4423, <kbd>1</kbd>, Balanced, Burn now.</li>
+<li><kbd>3</kbd> Match orbit 1 to 5 km from it.</li>
+<li>It gives way: plot and match again.</li>
+<li>The third crowding: it leaves.</li>
+</ol>
+<h3>Tension</h3>
+<table style="margin-top:.2em">
+<tr><td>+5</td><td>Each crowding</td></tr>
+<tr><td>+12 / h</td><td>You inside 1 km of it</td></tr>
+<tr><td>+3</td><td>It parks inside 1 km of X36</td></tr>
+<tr><td>25 · 50 · 100</td><td>Cautious · leaves · war</td></tr>
+</table>
+<h3>Score</h3>
+<table style="margin-top:.2em">
+<tr><td>40</td><td>It leaves</td></tr>
+<tr><td>20</td><td>Kept off X36</td></tr>
+<tr><td>20</td><td>A good track</td></tr>
+<tr><td>10</td><td>Fuel saved</td></tr>
+<tr><td>10</td><td>No war</td></tr>
+</table>
 </div>
 </div>
-</div><div class="tip" style="flex:none"><span class="l">Back to the title</span>Leaving the debrief ends the game and deletes the save.</div></div><div class="foot"><span>Reference</span><span>31</span></div>
 </section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>Physics you'll feel</h1>
-<p class="lede">Everything in xGEO is computed from real physics. You don't need the equations, but these six ideas explain what you see.</p>
-
-<div class="bd"><div class="g2 fill" style="grid-template-rows:repeat(3,1fr);gap:.16in .24in">
-<div class="card o"><h2>Falling round the Earth</h2><p>An orbit is a fall that keeps missing the ground. At 540 km you move at 7.6 km/s and go round in 95 minutes. Everything near you falls the same way, so up close things barely move relative to each other.</p></div>
-<div class="card o"><h2>Faster means slower</h2><p>Push forward and you climb on the far side of the Earth. A higher orbit takes longer, so you end up behind. To catch something ahead, slow down first.</p></div>
-<div class="card o"><h2>Fuel is speed</h2><p>Fuel is counted as the change in speed it can buy: Δv. WATCHMAN-1 has about 260 m/s. A move to a craft 15 km away costs 2 or 3 m/s. Going to a geostationary orbit would cost thousands.</p></div>
-<div class="card o"><h2>Light and shadow</h2><p>Up to a third of each orbit is in the Earth's shadow. A telescope sees by reflected sunlight, so in shadow a satellite vanishes. Infrared sees heat, which fades more slowly.</p></div>
-<div class="card o"><h2>Radio fades with distance</h2><p>Twice as far, a quarter as strong. Whether you hear a burst depends on power, antennas, distance and noise. Identifying it needs a clean copy, 15 dB above the noise.</p></div>
-<div class="card o"><h2>Knowing isn't seeing</h2><p>Your track is a best estimate with an honest size. Lose sight and the ring grows; a radar pass or a look shrinks it. The Earth's bulge and the Sun and Moon all pull, so paths aren't perfect ellipses.</p></div>
-</div></div><div class="foot"><span>Reference</span><span>32</span></div>
+<!-- ============================================================ B -->
+<section class="chap" data-ch="B" data-title="Glossary" style="page:chB">
+<div class="chap-head"><div class="no">Appendix B</div><h1>Glossary</h1></div>
+<p class="intro"><span class="q">Settings › Terms</span> switches between plain words and military ones. Both are here.</p>
+<dl class="gl">
+<div><dt>2σ (two sigma)</dt><dd>A size that holds the truth most of the time. Track rings and Fix use it.</dd></div>
+<div><dt>Apogee · perigee</dt><dd>The highest and lowest points of an orbit.</dd></div>
+<div><dt>Bearing</dt><dd>The direction a signal came from.</dd></div>
+<div><dt>BPSK · QPSK</dt><dd>Ways of sending bits by shifting a radio wave. Count the dot clusters to tell them apart.</dd></div>
+<div><dt>Contact · track</dt><dd>Something you know is there, and your estimate of where it is.</dd></div>
+<div><dt>Crowding</dt><dd>Parking within 5 km of Cosmos while it is parked and sees you.</dd></div>
+<div><dt>Custody</dt><dd>Keeping a good track: sure, and right, to within 1 km.</dd></div>
+<div><dt>dB</dt><dd>A ratio on a log scale. +3 dB is double, +10 dB ten times.</dd></div>
+<div><dt>DF</dt><dd>Direction finding: taking a bearing on a signal.</dd></div>
+<div><dt>Δv (delta-v)</dt><dd>The change in speed you can still make: your fuel, in m/s.</dd></div>
+<div><dt>EMCON</dt><dd>Emission control. Quiet: you only listen. Loud: you transmit.</dd></div>
+<div><dt>Escalation</dt><dd>How close the crisis is to open conflict. 100 ends it.</dd></div>
+<div><dt>EW console</dt><dd>The military name for the Listening station.</dd></div>
+<div><dt>In-track · radial · cross-track</dt><dd>Along the orbit · up and down · sideways. I, R and C.</dd></div>
+<div><dt>Keep-out</dt><dd>The space kept clear round a craft. X36's is 1 km; Cosmos's is 5 km.</dd></div>
+<div><dt>Link budget</dt><dd>The sum of gains and losses from a transmitter to a receiver.</dd></div>
+<div><dt>Match orbit</dt><dd>The burn that cancels your speed relative to a target, so you stay beside it.</dd></div>
+<div><dt>NORAD number</dt><dd>A satellite's number in the public catalogue. Cosmos 2612 is 68762.</dd></div>
+<div><dt>RPO</dt><dd>Rendezvous and proximity operations: one craft working close to another.</dd></div>
+<div><dt>SAR</dt><dd>Synthetic aperture radar: how X36 images the ground through cloud.</dd></div>
+<div><dt>SIGINT</dt><dd>Signals intelligence: listening to other people's radio.</dd></div>
+<div><dt>SNR</dt><dd>Signal-to-noise ratio: how far a signal stands above the hiss.</dd></div>
+<div><dt>Spectrum · waterfall</dt><dd>Signal strength by frequency now; and the same over time.</dd></div>
+<div><dt>TT&amp;C</dt><dd>Telemetry, tracking and command: a satellite's radio link home.</dd></div>
+<div><dt>UTC · Z</dt><dd>The clock satellites run on. 21:00Z is 21:00 UTC.</dd></div>
+</dl>
 </section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>Problems and answers</h1>
-<p class="lede">The usual snags, and what to do.</p>
-
-
-<div class="bd"><div class="g2" style="grid-template-rows:repeat(5,auto);gap:.13in .24in;align-content:start">
-<div class="card"><h3>The F keys do something else</h3><p>Click inside the game once. The same windows are on the Stations menu.</p></div>
-<div class="card"><h3>Match orbit is grey</h3><p>Select a contact and get within 5,000 km. Hover over it: the card says what's missing.</p></div>
-<div class="card"><h3>I can't hear anything</h3><p>Reports come every 3 to 6 hours, only over Russia, and never while you're within 10 km. Run at 600× and watch the waterfall.</p></div>
-<div class="card"><h3>Identify won't work</h3><p>Wait for the burst to end. It needs 15 dB and must be less than an hour old.</p></div>
-<div class="card"><h3>The telescope sees nothing</h3><p>The target is in shadow, or the Earth is behind it. Wait for the sunlight row on the Timeline.</p></div>
-<div class="card"><h3>I crowded it and nothing happened</h3><p>It must be parked, you within 5 km, and it must see you (Sees us).</p></div>
-<div class="card"><h3>The planner says it can't</h3><p>Nothing in the next day is affordable, or every path dips too low. Try another target, or wait.</p></div>
-<div class="card"><h3>The game is slow</h3><p>Close windows you don't need, turn off Ship shadows, use a smaller browser window.</p></div>
-<div class="card"><h3>Where's my save?</h3><p>Continue on the title screen. It lives in your browser's storage for this site.</p></div>
-<div class="card"><h3>Found a bug?</h3><p>Use Report a bug on the xGEO site: what you did, what you expected, what happened, and the mission time.</p></div>
-</div><div class="tip"><span class="l"><kbd>Esc</kbd>, in order</span>Closes a menu; cancels an orbit drag; leaves a close-up; closes the telescope; closes the newest window; and with nothing open, saves and goes to the title screen.</div></div><div class="foot"><span>Reference</span><span>33</span></div>
-</section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>Cheat sheet</h1>
-<p class="lede">Print this page and keep it by the keyboard.</p>
-
-<div class="bd"><div class="g2" style="gap:.2in .3in;align-content:start">
-<div>
-<h2>A winning order</h2>
-<div class="steps" style="gap:7px">
-<div class="st"><span class="n">1</span><div><p>Click X36, then TRK 4423 in the Overview</p></div></div>
-<div class="st"><span class="n">2</span><div><p><kbd>F2</kbd> and <kbd>]</kbd> to 600×: wait for its report</p></div></div>
-<div class="st"><span class="n">3</span><div><p>Click the recording, <kbd>D</kbd>, <kbd>I</kbd></p></div></div>
-<div class="st"><span class="n">4</span><div><p>Wait for "has parked"</p></div></div>
-<div class="st"><span class="n">5</span><div><p>Select TRK 4423, <kbd>1</kbd>, Balanced, Burn now</p></div></div>
-<div class="st"><span class="n">6</span><div><p><kbd>3</kbd> Match orbit 1 to 5 km from it</p></div></div>
-<div class="st"><span class="n">7</span><div><p>It gives way: plot and match again</p></div></div>
-<div class="st"><span class="n">8</span><div><p>Third crowding: it leaves</p></div></div>
-</div>
-<h2 style="margin-top:.22in">Tension</h2>
-<div class="keys">
-<span><b>+5</b></span><span>Each crowding</span>
-<span><b>+12 / h</b></span><span>You inside 1 km of it</span>
-<span><b>+3</b></span><span>It parks inside 1 km of X36</span>
-<span><b>25 · 50 · 100</b></span><span>Cautious · leaves · war</span>
-</div>
-<h2 style="margin-top:.22in">Score</h2>
-<p>40 it leaves · 20 off X36 · 20 good track · 10 fuel · 10 no war</p>
-</div>
-<div>
-<h2>Keys</h2>
-<div class="keys">
-<span><kbd>Space</kbd></span><span>Pause / resume</span>
-<span><kbd>[</kbd> <kbd>]</kbd></span><span>Slower / faster</span>
-<span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span>Plot move · Look · Match orbit</span>
-<span><kbd>F1</kbd></span><span>Campaign</span>
-<span><kbd>F2</kbd></span><span>Listening station</span>
-<span><kbd>F3</kbd></span><span>Planner</span>
-<span><kbd>F4</kbd></span><span>Overview</span>
-<span><kbd>F5</kbd></span><span>Database</span>
-<span><kbd>F7</kbd></span><span>Thermal forecast</span>
-<span><kbd>L</kbd></span><span>Map layers</span>
-<span><kbd>I</kbd></span><span>Telescope</span>
-<span><kbd>F</kbd></span><span>Close-up on the selection</span>
-<span><kbd>Tab</kbd></span><span>Next object</span>
-<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <kbd>Q</kbd><kbd>E</kbd></span><span>Turn and zoom the view</span>
-<span><kbd>Esc</kbd></span><span>Back, close, or the menu</span>
-</div>
-<h2 style="margin-top:.22in">In the Listening station</h2>
-<div class="keys">
-<span><kbd>↑</kbd> <kbd>↓</kbd></span><span>Pick a recording</span>
-<span><kbd>D</kbd></span><span>Find direction</span>
-<span><kbd>I</kbd></span><span>Identify (needs 15 dB)</span>
-<span><kbd>B</kbd></span><span>Next band</span>
-</div>
-<h2 style="margin-top:.22in">Mouse</h2>
-<div class="keys">
-<span><kbd>Drag</kbd></span><span>Turn · right-drag slides · wheel zooms</span>
-<span><kbd>Double-click</kbd></span><span>Focus on it</span>
-<span><kbd>Right-click</kbd></span><span>Its orders</span>
-<span><kbd>Drag orbit</kbd></span><span>Plan a burn by hand</span>
-</div>
-</div>
-</div></div><div class="foot"><span>Reference</span><span>34</span></div>
-</section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>Glossary</h1>
-<p class="lede">Settings › Terms switches between plain words and military ones. Both are here.</p>
-
-<div class="bd"><div class="gl">
-<div><b>2σ (two sigma)</b>A size that holds the truth most of the time. Track rings and Fix use it.</div>
-<div><b>Apogee · perigee</b>The highest and lowest points of an orbit.</div>
-<div><b>Bearing</b>The direction a signal came from.</div>
-<div><b>BPSK · QPSK</b>Ways of sending bits by shifting a radio wave. Count the dot clusters to tell them apart.</div>
-<div><b>Contact · track</b>Something you know is there, and your estimate of where it is.</div>
-<div><b>Crowding</b>Parking within 5 km of Cosmos while it is parked and sees you.</div>
-<div><b>Custody</b>Keeping a good track: sure, and right, to within 1 km.</div>
-<div><b>dB</b>A ratio on a log scale. +3 dB is double, +10 dB ten times.</div>
-<div><b>DF</b>Direction finding: taking a bearing on a signal.</div>
-<div><b>Δv (delta-v)</b>The change in speed you can still make: your fuel, in m/s.</div>
-<div><b>EMCON</b>Emission control. Quiet: you only listen. Loud: you transmit.</div>
-<div><b>Escalation</b>How close the crisis is to open conflict. 100 ends it.</div>
-<div><b>EW console</b>The military name for the Listening station.</div>
-<div><b>In-track · radial · cross-track</b>Along the orbit · up and down · sideways. I, R and C.</div>
-<div><b>Keep-out</b>The space kept clear round a craft. X36's is 1 km; Cosmos's is 5 km.</div>
-<div><b>Link budget</b>The sum of gains and losses from a transmitter to a receiver.</div>
-<div><b>Match orbit</b>The burn that cancels your speed relative to a target, so you stay beside it.</div>
-<div><b>NORAD number</b>A satellite's number in the public catalogue. Cosmos 2612 is 68762.</div>
-<div><b>RPO</b>Rendezvous and proximity operations: one craft working close to another.</div>
-<div><b>SAR</b>Synthetic aperture radar: how X36 images the ground through cloud.</div>
-<div><b>SIGINT</b>Signals intelligence: listening to other people's radio.</div>
-<div><b>SNR</b>Signal-to-noise ratio: how far a signal stands above the hiss.</div>
-<div><b>Spectrum · waterfall</b>Signal strength by frequency now; and the same over time.</div>
-<div><b>TT&amp;C</b>Telemetry, tracking and command: a satellite's radio link home.</div>
-<div><b>UTC · Z</b>The clock satellites run on. 21:00Z is 21:00 UTC.</div>
-</div></div><div class="foot"><span>Reference</span><span>35</span></div>
-</section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>The tutorial at a glance</h1>
-<p class="lede">A new game starts with the tutorial card at the top left. Each step ends when you've done it. In the tutorial Cosmos leaves at the second crowding, so a full run is shorter.</p>
-
-
-<div class="bd"><div class="fig" style="width:92%;margin:0 auto"><img alt="The tutorial card." src="img/tutorial.jpg"/><div class="cap"><span class="q">Skip</span> moves on. <span class="q">Hide</span> tucks the card away.</div></div><div class="g2">
-<table class="kv n">
+<!-- ============================================================ C -->
+<section class="chap" data-ch="C" data-title="The Tutorial" style="page:chC">
+<div class="chap-head"><div class="no">Appendix C</div><h1>The Tutorial</h1></div>
+<p class="intro">A new game starts with the tutorial card at the top left. Each step ends when you have done it. In the tutorial Cosmos leaves at the second crowding, so a full run is shorter.</p>
+<figure class="mid"><img alt="The tutorial card." src="img/tutorial.jpg"/><figcaption><b>Figure C.1</b>The tutorial card. <span class="q">Skip</span> moves on; <span class="q">Hide</span> tucks the card away.</figcaption></figure>
+<table>
+<tr><th style="width:16%">Steps</th><th>What you learn</th></tr>
 <tr><td>1–2</td><td>Turn and slide the view</td></tr>
 <tr><td>3–6</td><td>Find X36 and TRK 4423; the Ours tab</td></tr>
 <tr><td>7–10</td><td>Database, Campaign, Map layers, Terms</td></tr>
 <tr><td>11</td><td>Let time run at 60×</td></tr>
 <tr><td>12–16</td><td>Listen, hear it, identify it, the link budget, Signals</td></tr>
-</table>
-<table class="kv n">
 <tr><td>17–18</td><td>Plot a move and burn</td></tr>
 <tr><td>19–20</td><td>Hover over it; look through the telescope</td></tr>
 <tr><td>21</td><td>Match orbit within 5 km</td></tr>
@@ -1025,33 +803,9 @@ kbd{display:inline-block;min-width:1.65em;text-align:center;font:600 8.6pt/1 var
 <tr><td>23</td><td>Follow it and match again</td></tr>
 <tr><td>24</td><td>Let time run to the debrief</td></tr>
 </table>
-</div></div><div class="foot"><span>Reference</span><span>36</span></div>
+<p class="small" style="margin-top:2em">xGEO Live Operator's Handbook · Alpha 0.5, build 11 · November 2026 · © 2026 Kevin Williamson. All rights reserved.</p>
 </section>
-<section class="pg">
-<div class="kick">4 · Reference</div>
-<h1>For tinkerers</h1>
-<p class="lede">xGEO is a simulation first. Three pages on the title screen let you change the numbers and test your plans.</p>
-
-
-
-
-
-
-
-
-<div class="bd"><div class="g3">
-<div class="card o"><h2>Edit</h2><p>Change the scenario's main numbers: where everyone starts, WATCHMAN-1's fuel and telescope, Cosmos's habits, the tension rules, the score weights. Press <span class="q">Play edited</span>.</p></div>
-<div class="card o"><h2>Study</h2><p>Play each plan many times (Do nothing, Shadow, Guard) and compare how often each wins. Each run redraws Cosmos's habits, so luck shows up. Desktop program only.</p></div>
-<div class="card o"><h2>Library</h2><p>Every source the numbers rest on, with why it was chosen. In game it's under Help.</p></div>
-</div><div class=""><h3>What Edit can change</h3>
-<table class="kv">
-<tr><td>Start</td><td>Where WATCHMAN-1 and Cosmos start, the catalogue error, the operation's length.</td></tr>
-<tr><td>WATCHMAN-1</td><td>Propellant, exhaust speed, telescope size.</td></tr>
-<tr><td>Cosmos 2612's behaviour</td><td>How close counts as crowding, how far it evades, how many times, when it feels unwatched, its closest approach.</td></tr>
-<tr><td>Rules and tension</td><td>The keep-out, how good a track must be, tension per crowding and per hour, when it leaves, when it's war.</td></tr>
-<tr><td>Score weights</td><td>The points for each of the five goals.</td></tr>
-</table></div><div class="tip"><span class="l">Remember</span>Start scenario always plays the scenario as published. Only Play edited uses your changes. A study tells you which plan does better in this model, not what would happen in real life.</div><div class=""></div><div class="grp"><h2>Real and invented</h2><p>ICEYE-X36 and Cosmos 2612 are real satellites, flown from their public orbits and published specifications. The five ground radars are real sites. WATCHMAN-1 is invented, loosely modelled on the US GSSAP inspectors, and what happens in the game is fiction. Their operators have not reviewed or endorsed this game.</p><p>xGEO Core, the engine under the game, is open source. Its Research Edition describes every model and the checks that hold it to its sources. Both are on the xGEO site.</p><p class="small">xGEO Live Operator's Handbook · Alpha 0.5, build 11 · November 2026 · © 2026 Kevin Williamson. All rights reserved.</p></div></div><div class="foot"><span>Reference</span><span>37</span></div>
-</section>
+</main>
 
 </body>
 </html>
