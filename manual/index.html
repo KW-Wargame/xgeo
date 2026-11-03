@@ -200,6 +200,7 @@ ul.b li b{color:var(--ink);font-weight:600}
 .sheet ol li{display:block;position:relative;padding-left:.32in}
 .sheet ol li::before{position:absolute;left:0;top:4px}
 .tbl2{display:grid;grid-template-columns:1fr 1fr;gap:0 .26in}
+
 </style>
 </head>
 <body>
@@ -261,7 +262,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <li><span></span>Tactical: close moves<em>19</em></li>
       <li><span></span>Strategic, and dragging an orbit<em>20</em></li>
       <li><span>7</span>The telescope<em>21</em></li>
-      <li><span>8</span>The SIGINT station<em>22</em></li>
+      <li><span>8</span>The Listening station<em>22</em></li>
     </ol>
     <ol class="toc">
       <li><span>9</span>Being seen: the heat forecast<em>24</em></li>
@@ -330,7 +331,7 @@ ul.b li b{color:var(--ink);font-weight:600}
         <tr><td>MUSIC</td><td>A volume slider.</td></tr>
         <tr><td>EFFECTS</td><td>Volume of clicks, alarms and drives.</td></tr>
       </table>
-      <div class="tip"><b>Note</b>In this build the volumes reset each time the game starts, and Terms is kept only inside a save. Map layers, contact symbols and window sizes are remembered.</div>
+      <div class="tip"><b>Note</b>Terms, the volumes, map layers, contact symbols and window sizes are all remembered between games.</div>
     </div>
   </div>
   <div class="foot"><span>Getting started</span><span>4</span></div>
@@ -487,7 +488,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <h2 class="h">EMCON, escalation, classification</h2>
       <div class="fig"><img src="img/c-escal.jpg" alt="EMCON QUIET, the escalation bar at 0, UNCLASSIFIED // EXERCISE."></div>
       <p><b>EMCON</b> (emission control) reads <span class="q">QUIET</span> while you only listen and <span class="q">LOUD</span> while any of ours sends a radar beam or jams. WATCHMAN-1 has neither, so in CLOSE PASS you are always quiet. Being quiet matters: if Cosmos hears you, it goes silent.</p>
-      <p><b>ESCALATION</b> is a bar of 24 cells and a number from 0 to 100: how close the two sides are to open conflict. At 100 you lose. Chapter 12 lists exactly what raises it.</p>
+      <p><b>ESCALATION</b> is a bar of 24 cells and a number from 0 to 100: how close the two sides are to open conflict. It turns amber at 25, where Cosmos turns cautious, and red at 50, where it leaves. At 100 you lose. Chapter 12 lists exactly what raises it.</p>
       <p><span class="q">UNCLASSIFIED // EXERCISE</span> reminds you this is a training scenario: invented events on real physics.</p>
       <h2 class="h">Search</h2>
       <div class="fig"><img src="img/m-find.jpg" alt="Searching for 'plan'." style="width:60%"></div>
@@ -505,10 +506,10 @@ ul.b li b{color:var(--ink);font-weight:600}
     <div>
       <div class="fig"><img src="img/m-file.jpg" alt="The File menu."><div class="cap"><b>File.</b> Pause or resume, faster, slower. Save and go to the menu (<kbd>Esc</kbd>), Settings, Save and quit.</div></div>
       <div class="fig"><img src="img/m-view.jpg" alt="The View menu."><div class="cap"><b>View.</b> Show the Overview (<kbd>F4</kbd>) and Map layers (<kbd>L</kbd>). Centre the camera on your ship or the selection. Look through the telescope (<kbd>I</kbd>). Terms: plain words or doctrinal terms.</div></div>
-      <div class="fig"><img src="img/m-orders.jpg" alt="The Orders menu." style="width:75%"><div class="cap"><b>Orders.</b> The acting ship's orders with their keys: Plan <kbd>1</kbd>, Look <kbd>2</kbd>, Match <kbd>3</kbd>. Greyed when not possible now.</div></div>
+      <div class="fig"><img src="img/m-orders.jpg" alt="The Orders menu." style="width:75%"><div class="cap"><b>Orders.</b> The acting ship's orders with their keys: Plan <kbd>1</kbd>, Look <kbd>2</kbd>, Match <kbd>3</kbd>. Greyed when not possible now. ACT FROM picks the ship you act from.</div></div>
     </div>
     <div>
-      <div class="fig"><img src="img/m-stations.jpg" alt="The Stations menu."><div class="cap"><b>Stations.</b> The windows: Campaign <kbd>F1</kbd>, SIGINT station <kbd>F2</kbd>, Signals, Planner <kbd>F3</kbd>, Database <kbd>F5</kbd>, Heat forecast <kbd>F7</kbd>, Solar system. A tick marks each one that is open.</div></div>
+      <div class="fig"><img src="img/m-stations.jpg" alt="The Stations menu."><div class="cap"><b>Stations.</b> The windows: Campaign <kbd>F1</kbd>, Listening station <kbd>F2</kbd>, Signals, Planner <kbd>F3</kbd>, Database <kbd>F5</kbd>, Thermal forecast <kbd>F7</kbd>, Solar system. A tick marks each one that is open.</div></div>
       <div class="fig"><img src="img/m-help.jpg" alt="The Help menu."><div class="cap"><b>Help.</b> How to play, the Library, and a reminder of the mouse keys.</div></div>
       <div class="txt">
         <h2 class="h">Map</h2>
@@ -585,8 +586,8 @@ ul.b li b{color:var(--ink);font-weight:600}
       <h2 class="h">The rows</h2>
       <table class="tb k">
         <tr><td>My decisions</td><td>Burns you have set, and the move the planner has open (<span class="q">Move WCH-1 by 21:00</span>).</td></tr>
-        <tr><td>K2612</td><td>The nearest hostile: its closest pass to anything, as <span class="q">Closest · 2 km · X36 · 21:53</span>.</td></tr>
-        <tr><td>Our radars see K2612</td><td>A bar for each radar pass, named PFISR, MSR, KSR, ASR or FENCE.</td></tr>
+        <tr><td>TRK 4423</td><td>The nearest hostile: its closest pass to anything, as <span class="q">Closest · 2 km · X36 · 21:53</span>.</td></tr>
+        <tr><td>Our radars see TRK 4423</td><td>A bar for each radar pass, named PFISR, MSR, KSR, ASR or FENCE.</td></tr>
         <tr><td>WCH-1 in sunlight</td><td>Bars while you're lit. The gaps are Earth's shadow.</td></tr>
       </table>
       <h2 class="h">+ Add row</h2>
@@ -668,7 +669,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <div class="fig"><img src="img/c-layers.jpg" alt="The Map layers panel." style="width:auto;max-height:3.1in;margin:0 auto"></div>
       <div class="txt">
         <h2 class="h">Map layers <kbd>L</kbd></h2>
-        <p>Tick what the view draws. The ones that matter in CLOSE PASS:</p>
+        <p>Tick what the view draws. The panel lists only the layers that fit the scenario. The main ones:</p>
         <table class="tb k">
           <tr><td>Planned moves</td><td>Your transfer arcs, with hour marks</td></tr>
           <tr><td>Acting ship's orbit</td><td>Where you coast next</td></tr>
@@ -711,10 +712,11 @@ ul.b li b{color:var(--ink);font-weight:600}
       <div class="fig"><img src="img/c-context.jpg" alt="The right-click menu on TRK 4423." style="width:68%"></div>
       <table class="tb k">
         <tr><td>PLAN INTERCEPT ▸</td><td>Opens the planner on it</td></tr>
+        <tr><td>LOOK · VISIBLE</td><td>Points the telescope at it (the same as Look, key 2)</td></tr>
         <tr><td>FOCUS CAMERA</td><td>Turns the view round it</td></tr>
         <tr><td>DATABASE ▸</td><td>Its page in the Database (F5)</td></tr>
       </table>
-      <p>The menu also has an <span class="q">EFFECTS</span> heading for counterspace effects such as jamming. WATCHMAN-1 carries none, so in CLOSE PASS the heading stays empty.</p>
+      <p>A craft that carries counterspace effects, such as a jammer, also gets an <span class="q">EFFECTS</span> heading here. WATCHMAN-1 carries none, so CLOSE PASS does not show it.</p>
       <p>Right-click empty space for <span class="q">FOCUS WCH-1</span> and <span class="q">MAP LAYERS…</span>.</p>
       <div class="box"><h4>Burns are seen</h4>Every burn makes your thrusters glow. Cosmos's telescope can catch it, and if it sees one of ours burning it goes quiet on the radio for six hours. Listen first, then move.</div>
     </div>
@@ -938,10 +940,10 @@ ul.b li b{color:var(--ink);font-weight:600}
 </section>
 
 <section class="pg">
-  <div class="sec">8 · The SIGINT station</div>
+  <div class="sec">8 · The Listening station</div>
   <h1>Listening</h1>
-  <p class="lede">Cosmos 2612 reports home in short radio bursts. The SIGINT station (<kbd>F2</kbd>) is your receiver: it shows each burst arriving live, records it, and lets you work out who sent it.</p>
-  <div class="fig"><img src="img/ew-live.jpg" alt="The SIGINT station with a burst arriving on the waterfall and spectrum."><div class="cap">A burst arriving: the bright stripe on the waterfall and the peak on the spectrum at 2,250 MHz, in S band, while the recording list shows it <span class="q">ON AIR</span>.</div></div>
+  <p class="lede">Cosmos 2612 reports home in short radio bursts. The Listening station (<kbd>F2</kbd>) is your receiver: it shows each burst arriving live, records it, and lets you work out who sent it.</p>
+  <div class="fig"><img src="img/ew-live.jpg" alt="The Listening station with a burst arriving on the waterfall and spectrum."><div class="cap">A burst arriving: the bright stripe on the waterfall and the peak on the spectrum at 2,250 MHz, in S band, while the recording list shows it <span class="q">ON AIR</span>.</div></div>
   <div class="split">
     <div class="txt">
       <h2 class="h">Across the top</h2>
@@ -972,11 +974,11 @@ ul.b li b{color:var(--ink);font-weight:600}
       <div class="tip"><b>So</b>Listen before you close in. Once you're within 10 km it stops talking.</div>
     </div>
   </div>
-  <div class="foot"><span>The SIGINT station</span><span>22</span></div>
+  <div class="foot"><span>The Listening station</span><span>22</span></div>
 </section>
 
 <section class="pg">
-  <div class="sec">8 · The SIGINT station</div>
+  <div class="sec">8 · The Listening station</div>
   <h1>Working a Signal</h1>
   <p class="lede">A recording is a clue. Measure it, find where it came from, and match it to a known radio, and you know who is talking.</p>
   <div class="fig"><img src="img/ew-id.jpg" alt="INT-001 identified as COSMOS 2612 (KOSMOS)." style="width:auto;max-height:3.3in;margin:0 auto"><div class="cap">INT-001 worked: the four-dot constellation and eye diagram read as BPSK at 100 kBd, the threat library matches it to Cosmos 2612, and the status reads IDENTIFIED.</div></div>
@@ -1002,7 +1004,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <p><span class="q">Stations › Signals</span>: a small window with the six newest recordings. Click one to open the station on it.</p>
     </div>
   </div>
-  <div class="foot"><span>The SIGINT station</span><span>23</span></div>
+  <div class="foot"><span>The Listening station</span><span>23</span></div>
 </section>
 
 <section class="pg">
@@ -1100,7 +1102,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <p><span class="q">What you must do</span>: each goal with + done, × failed or · open, and its progress: <span class="q">closest 3 km</span>, <span class="q">100 % of the time</span>, <span class="q">0 % used</span>. The title says the day, <span class="q">day 1 of 2</span>.</p>
       <p>Below, the <b>kill chain</b> for the selected Red track: Heard, Located and identified, Following, Ready to decide, Acted, Out of the fight.</p>
       <h2 class="h">The sums</h2>
-      <p>Click <span class="q">SNR HERE ⓘ</span> in the SIGINT station and the <b>Inspector</b> opens: each term of the radio link budget, from transmit power through antenna gains, free-space loss and receiver noise to integration over the burst, with its value and the standard behind it, then the total and the chance of hearing it. It follows the live geometry while open.</p>
+      <p>Click <span class="q">SNR HERE ⓘ</span> in the Listening station and the <b>Inspector</b> opens: each term of the radio link budget, from transmit power through antenna gains, free-space loss and receiver noise to integration over the burst, with its value and the standard behind it, then the total and the chance of hearing it. It follows the live geometry while open.</p>
       <p>With doctrinal terms on, hover cards show formulas too.</p>
       <h2 class="h">Solar system</h2>
       <p><span class="q">Stations › Solar system</span>: a live chart of the Sun and planets, from JPL's positions, with each one's distance and the cheapest trip there.</p>
@@ -1141,7 +1143,7 @@ ul.b li b{color:var(--ink);font-weight:600}
         <div class="br"><b>It leaves at once</b><span><i style="width:50%;background:var(--unk)"></i></span><em>at 50</em></div>
         <div class="br x"><b>Open conflict</b><span><i style="width:100%"></i></span><em>at 100: you lose</em></div>
       </div>
-      <p><b>At 25</b> it gives way one time fewer, and stops moving in when alone. <b>At 50</b> it leaves the next time you crowd it. Pushing hard wins sooner, but costs score and risks war. Warnings appear in the log at 50, 75 and 90.</p>
+      <p><b>At 25</b> it gives way one time fewer, and stops moving in when alone. <b>At 50</b> it leaves the next time you crowd it. Pushing hard wins sooner, but costs score and risks war. Warnings appear in the log at 25, 50 and 90.</p>
       <h2 class="h">Its radio</h2>
       <p>Reports every 3 to 6 hours and after each move, 2 minutes long, on 2,250 MHz, only while its station near Moscow is above the horizon. Quiet for 6 hours after it sees one of ours burn, hears us, or finds us within 10 km.</p>
       <h2 class="h">Its eyes</h2>
@@ -1160,7 +1162,7 @@ ul.b li b{color:var(--ink);font-weight:600}
     <div>
       <div class="fig"><img src="img/tutorial.jpg" alt="The tutorial card, step 1."></div>
       <div class="txt">
-        <p><span class="q">SKIP</span> moves on. <span class="q">HIDE</span> tucks the card away and leaves a small <span class="q">TUTORIAL · SHOW</span> key at the top. Time starts paused. When a wait ends at a high time rate, time stops so you can read the card. Over the SIGINT station the card shrinks to one line.</p>
+        <p><span class="q">SKIP</span> moves on. <span class="q">HIDE</span> tucks the card away and leaves a small <span class="q">TUTORIAL · SHOW</span> key at the top. Time starts paused. When a wait ends at a high time rate, time stops so you can read the card. Over the Listening station the card shrinks to one line.</p>
         <p>In the tutorial Cosmos gives way once and leaves the second time it is crowded, so a full run takes less time.</p>
       </div>
     </div>
@@ -1177,7 +1179,7 @@ ul.b li b{color:var(--ink);font-weight:600}
       <tr><td>9</td><td>Map layers</td><td>Esc, then View › Map layers (L)</td></tr>
       <tr><td>10</td><td>Your words</td><td>Esc, then View › the other Terms</td></tr>
       <tr><td>11</td><td>Let time run</td><td>Speed up to 60× (])</td></tr>
-      <tr><td>12</td><td>The SIGINT station</td><td>Stations › SIGINT station (F2)</td></tr>
+      <tr><td>12</td><td>The Listening station</td><td>Stations › Listening station (F2)</td></tr>
       <tr><td>13</td><td>Hear it</td><td>Click its newest report when it appears</td></tr>
       <tr><td>14</td><td>Identify</td><td>Press IDENTIFY SIGNAL</td></tr>
       <tr><td>15</td><td>The link budget</td><td>Click the SNR number</td></tr>
@@ -1245,7 +1247,7 @@ ul.b li b{color:var(--ink);font-weight:600}
 <section class="pg">
   <div class="sec">15 · After the operation</div>
   <h1>The Debrief</h1>
-  <p class="lede">When the operation ends the view holds a few seconds on the craft it turned on, under OPERATION COMPLETE, OPERATION FAILED or THE TIME IS UP. Click to skip. Then the debrief.</p>
+  <p class="lede">When the operation ends the view holds a few seconds on the craft it turned on, under OPERATION COMPLETE, OPERATION FAILED or THE 2 DAYS ARE UP. Click to skip. Then the debrief.</p>
   <div class="fig"><img src="img/debrief.jpg" alt="The debrief: OPERATION COMPLETE, the goals, the score, and the replay." style="width:auto;max-height:3.15in;margin:0 auto"></div>
   <div class="split">
     <div class="txt">
@@ -1362,8 +1364,8 @@ ul.b li b{color:var(--ink);font-weight:600}
       <p>Close windows you don't need, turn off Ship shadows, use a smaller browser window. At high time rates the clock runs as fast as your computer allows.</p>
       <h2 class="h">Where's my save?</h2>
       <p>CONTINUE on the title screen. It's in your browser's storage for this site; clearing site data removes it. Finishing a game deletes it.</p>
-      <h2 class="h">Some words mention Jupiter</h2>
-      <p>xGEO first flew at Jupiter, and a few labels still say so. They'll be fixed.</p>
+      <h2 class="h">Where is Jupiter?</h2>
+      <p>The whole solar system is modelled, Jupiter and its moons included. Open <span class="q">Stations › Solar system</span> to see where everything is now.</p>
       <h2 class="h">Found a bug?</h2>
       <p>Use <b>Report a bug</b> on the xGEO site. Say what you did, what you expected and what happened, with the mission time.</p>
       <div class="box"><h4>Esc, in order</h4>Closes an open menu; cancels an orbit drag; leaves a close-up; closes the telescope; closes the newest window; and with nothing open, saves and goes to the title screen.</div>
@@ -1413,11 +1415,11 @@ ul.b li b{color:var(--ink);font-weight:600}
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Slower / faster</dd>
         <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Plot move · Look · Match orbit</dd>
         <dt><kbd>F1</kbd></dt><dd>Campaign</dd>
-        <dt><kbd>F2</kbd></dt><dd>SIGINT station</dd>
+        <dt><kbd>F2</kbd></dt><dd>Listening station</dd>
         <dt><kbd>F3</kbd></dt><dd>Planner</dd>
         <dt><kbd>F4</kbd></dt><dd>Overview</dd>
         <dt><kbd>F5</kbd></dt><dd>Database</dd>
-        <dt><kbd>F7</kbd></dt><dd>Heat forecast</dd>
+        <dt><kbd>F7</kbd></dt><dd>Thermal forecast</dd>
         <dt><kbd>L</kbd></dt><dd>Map layers</dd>
         <dt><kbd>I</kbd> <kbd>V</kbd></dt><dd>Telescope · visible / infrared</dd>
         <dt><kbd>F</kbd></dt><dd>Close-up on the selection</dd>
@@ -1426,7 +1428,7 @@ ul.b li b{color:var(--ink);font-weight:600}
         <dt><kbd>Q</kbd> <kbd>E</kbd></dt><dd>Zoom</dd>
         <dt><kbd>Esc</kbd></dt><dd>Back / close / menu</dd>
       </dl>
-      <h4>In the SIGINT station</h4>
+      <h4>In the Listening station</h4>
       <dl>
         <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Pick a recording</dd>
         <dt><kbd>D</kbd></dt><dd>Find direction</dd>
